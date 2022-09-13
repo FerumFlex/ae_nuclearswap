@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { createStyles, Header, Container, Group, Burger, Paper, Transition } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Logo } from './Logo';
+import { ThemeIcon } from '@mantine/core';
+import { Wallet } from './Wallet';
 
 const HEADER_HEIGHT = 60;
 
@@ -80,7 +82,7 @@ interface HeaderResponsiveProps {
 
 export function HeaderResponsive({ links }: HeaderResponsiveProps) {
   const [opened, { toggle, close }] = useDisclosure(false);
-  const [active, setActive] = useState(links[0].link);
+  const [active, setActive] = useState(links.length ? links[0].link : "");
   const { classes, cx } = useStyles();
 
   const items = links.map((link) => (
@@ -101,7 +103,9 @@ export function HeaderResponsive({ links }: HeaderResponsiveProps) {
   return (
     <Header height={HEADER_HEIGHT} style={{backgroundColor: "unset"}} className={classes.root}>
       <Container className={classes.header}>
-        <Logo />
+        <ThemeIcon>
+          <Logo />
+        </ThemeIcon>
         <Group spacing={5} className={classes.links}>
           {items}
         </Group>
@@ -115,6 +119,8 @@ export function HeaderResponsive({ links }: HeaderResponsiveProps) {
             </Paper>
           )}
         </Transition>
+
+        <Wallet />
       </Container>
     </Header>
   );

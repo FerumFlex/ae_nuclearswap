@@ -10,45 +10,36 @@ function App() {
     <AppShell
       padding="md"
       header={<HeaderResponsive links={[
-        {
-          "link": "/about",
-          "label": "Features"
-        },
-        {
-          "link": "/pricing",
-          "label": "Pricing"
-        },
-        {
-          "link": "/learn",
-          "label": "Learn"
-        },
-        {
-          "link": "/community",
-          "label": "Community"
-        }
-      ]
-    } />}
+        // {
+        //   "link": "/about",
+        //   "label": "Features"
+        // },
+        // {
+        //   "link": "/pricing",
+        //   "label": "Pricing"
+        // },
+        // {
+        //   "link": "/learn",
+        //   "label": "Learn"
+        // },
+        // {
+        //   "link": "/community",
+        //   "label": "Community"
+        // }
+      ]} />}
       footer={<FooterCentered links={[
-        {
-          "link": "#",
-          "label": "Contact"
-        },
-        {
-          "link": "#",
-          "label": "Privacy"
-        },
-        {
-          "link": "#",
-          "label": "Blog"
-        },
-        {
-          "link": "#",
-          "label": "Store"
-        },
-        {
-          "link": "#",
-          "label": "Careers"
-        }
+        // {
+        //   "link": "#",
+        //   "label": "Contact"
+        // },
+        // {
+        //   "link": "#",
+        //   "label": "Privacy"
+        // },
+        // {
+        //   "link": "#",
+        //   "label": "Blog"
+        // }
       ]} />}
     >
       <Content />
