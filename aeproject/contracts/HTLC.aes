@@ -79,12 +79,11 @@ contract HTLC =
     require(locked_contract.withdrawn == false, "refundable: already withdrawn")
     require(locked_contract.endtime =< Chain.timestamp, "refundable: endtime not yet passed")
 
-  stateful entrypoint fund(token: FungibleTokenInterface , secret_hash : hash , recipient : address, sender : address, endtime : int, amount : int) : hash =
+  stateful entrypoint fund(token: FungibleTokenInterface , secret_hash : hash , recipient : address, endtime : int, amount : int) : hash =
     is_token_transferable (token, Call.caller, amount)
     future_endtime (endtime)
 
-    require(Call.caller == sender, "msg.sender must be same with sender address")
-
+    let sender = Call.caller
     let parts =
       [ Address.to_str(token.address)
         ,Bytes.to_str(secret_hash)

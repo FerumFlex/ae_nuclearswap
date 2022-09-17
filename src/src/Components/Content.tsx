@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Text, Paper, Stack, Select, Group, Center, NumberInput, Button } from '@mantine/core';
 import { IconExchange } from '@tabler/icons';
-
+import aeToken from '../contracts/ae_token.json';
+import aeHtlc from '../contracts/ae_htlc.json';
+var sha256 = require('js-sha256');
 
 const networks = [
   {
@@ -14,10 +16,36 @@ const networks = [
   }
 ];
 
+const bot_addr = "ak_4z2k6qMcDuaTkcd2CvrRWyZe8xFQ1RntyWKbDf6nH19PSdwxm";
 
-export function Content() {
+
+export function Content({aeSdk} : {aeSdk: any}) {
   const [fromNetwork, setfromNetwork] = useState<string>(networks[0].value);
   const [toNetwork, settoNetwork] = useState<string>(networks[1].value);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const doExchange = async () => {
+    setIsLoading(true);
+    try {
+      const address = await aeSdk.address();
+      const aeTokenContract = await aeSdk.getContractInstance({ aci: aeToken.aci, bytecode: aeToken.bytecode, contractAddress: aeToken.address});
+      const aeHtlcContract = await aeSdk.getContractInstance({ aci: aeHtlc.aci, bytecode: aeHtlc.bytecode, contractAddress: aeHtlc.address});
+      const htlc_address = "ak" + aeHtlc.address.substr(2);
+      const amount = 100000;
+      const password = "testing";
+      const secret_hash = sha256(password);
+
+      // mint tokens
+      await aeTokenContract.methods.mint(address, amount);
+
+      await aeTokenContract.methods.create_allowance(htlc_address, amount);
+      const unix = Date.now() + 60 * 10 * 1000; // 1 hour
+
+      await aeHtlcContract.methods.fund(aeToken.address, secret_hash, bot_addr, unix, amount);
+    } finally {
+      setIsLoading(false)
+    }
+  };
 
   return (
     <Stack align="center" justify="center" style={{backgroundColor: "unset", height: "100%"}}>
@@ -67,7 +95,7 @@ export function Content() {
         </Paper>
 
         <Center style={{paddingTop: "20px"}}>
-          <Button size={"lg"} radius={"md"}>Exchange</Button>
+          <Button loading={isLoading} size={"lg"} radius={"md"} onClick={doExchange}>Exchange</Button>
         </Center>
       </Paper>
     </Stack>

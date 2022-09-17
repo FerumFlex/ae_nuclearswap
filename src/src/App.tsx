@@ -8,22 +8,19 @@ import { initSdk } from './utils/aeternity';
 
 function App() {
   const [sdkReady, setSdkReady] = useState(false);
-  const [address, setAddress] = useState("");
+  const [aeSdk, setAeSdk] = useState<any>(null);
 
   useEffect(() => {
     (async () => {
       const aeSdk = await initSdk();
-      setSdkReady(true);
-      const _address = await aeSdk.address();
-      setAddress(_address);
-      console.log(_address);
+      setAeSdk(aeSdk);
     })();
   }, []);
 
   return (
     <AppShell
       padding="md"
-      header={<HeaderResponsive links={[
+      header={<HeaderResponsive aeSdk={aeSdk} links={[
         // {
         //   "link": "/about",
         //   "label": "Features"
@@ -56,7 +53,7 @@ function App() {
         // }
       ]} />}
     >
-      <Content />
+      <Content aeSdk={aeSdk} />
     </AppShell>
   );
 }

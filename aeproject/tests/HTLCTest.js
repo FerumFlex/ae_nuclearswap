@@ -54,7 +54,7 @@ describe('HTLC', () => {
     let result = await token_contract.methods.create_allowance(htlc_address, amount);
     assert.equal(result.result.returnType, "ok");
 
-    result = await htlc_contract.methods.fund(token_address, secret_hash, another_address, address, unix, amount);
+    result = await htlc_contract.methods.fund(token_address, secret_hash, another_address, unix, amount);
     assert.equal(result.result.returnType, "ok");
     let lock_contract_id = result.decodedResult;
 
@@ -81,7 +81,7 @@ describe('HTLC', () => {
     let result = await token_contract.methods.create_allowance(htlc_address, amount);
     assert.equal(result.result.returnType, "ok");
 
-    result = await htlc_contract.methods.fund(token_address, secret_hash, another_address, address, unix, amount);
+    result = await htlc_contract.methods.fund(token_address, secret_hash, another_address, unix, amount);
     assert.equal(result.result.returnType, "ok");
     let lock_contract_id = result.decodedResult;
 
