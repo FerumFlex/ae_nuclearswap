@@ -1,0 +1,140 @@
+@compiler >= 6
+
+include "Option.aes"
+include "String.aes"
+
+
+contract interface FungibleTokenInterface =
+  record meta_info =
+    { name : string
+    , symbol : string
+    , decimals : int }
+
+  datatype event =
+    Transfer(address, address, int)
+
+  entrypoint aex9_extensions : ()                         => list(string)
+  entrypoint meta_info       : ()                         => meta_info
+  entrypoint total_supply    : ()                         => int
+  entrypoint owner           : ()                         => address
+  entrypoint balances        : ()                         => map(address, int)
+  entrypoint balance         : (address)                  => option(int)
+  stateful entrypoint transfer        : (address, int)             => unit
+  entrypoint allowance       : (address, address)         => option(int)
+
+contract HTLC =
+  datatype event =
+    // Log_fund(hash, indexed address, hash, indexed address, indexed address, int, int)
+    Log_fund(address, address, address)
+    | Log_withdraw(hash)
+    | Log_refund(hash)
+
+  record lockContract =
+    { token : address
+    , secret_hash : hash
+    , recipient : address
+    , sender : address
+    , endtime : int
+    , amount : int
+    , withdrawn : bool
+    , refunded : bool
+    , preimage : string }
+
+  type locked_contracts = map(hash, lockContract)
+
+  record state =
+    { locked_contracts: locked_contracts }
+
+  entrypoint init() =
+    { locked_contracts = {} }
+
+  entrypoint erc20_token(token: address) : FungibleTokenInterface =
+    Address.to_contract(token)
+
+  function is_token_transferable(token: address, sender: address, amount: int ) =
+    require(amount > 0, "token amount must be > 0")
+    let allowed = Option.default(0, erc20_token(token).allowance(sender, Contract.address))
+    require(allowed >= amount, "token allowance must be >= amount")
+
+  function future_endtime (endtime : int) =
+    require(endtime > Chain.timestamp, "endtime time must be in the future")
+
+  function is_locked_contract_exist (locked_contract_id: hash) =
+    require(have_locked_contract(locked_contract_id), "locked_contract_id does not exist")
+
+  function check_secret_hash_matches (locked_contract_id : hash, preimage : string) =
+    let locked_contract = state.locked_contracts[locked_contract_id]
+    require(locked_contract.secret_hash == Crypto.sha256(preimage), "secret hash hash does not match")
+
+  function withdrawable (locked_contract_id : hash) =
+    let locked_contract = state.locked_contracts[locked_contract_id]
+    require(locked_contract.recipient == Call.caller, "withdrawable: not recipient")
+    require(locked_contract.withdrawn == false, "withdrawable: already withdrawn")
+    require(locked_contract.refunded == false, "withdrawable: already refunded")
+
+  function refundable (locked_contract_id : hash) =
+    let locked_contract = state.locked_contracts[locked_contract_id]
+    require(locked_contract.sender == Call.caller, "refundable: not sender")
+    require(locked_contract.refunded == false, "refundable: already refunded")
+    require(locked_contract.withdrawn == false, "refundable: already withdrawn")
+    require(locked_contract.endtime =< Chain.timestamp, "refundable: endtime not yet passed")
+
+  stateful entrypoint fund (token: address , secret_hash : hash , recipient : address, sender : address, endtime : int, amount : int) : hash =
+    is_token_transferable (token, Call.caller, amount)
+    future_endtime (endtime)
+
+    require(Call.caller == sender, "msg.sender must be same with sender address")
+
+    let parts =
+      [ Address.to_str(token)
+        ,Bytes.to_str(secret_hash)
+        ,Address.to_str(recipient)
+        ,Address.to_str(sender)
+        ,Int.to_str(endtime)
+        ,Int.to_str(amount)]
+    let locked_contract_id = Crypto.sha256(String.concats(parts))
+
+    if (have_locked_contract(locked_contract_id))
+      abort("this locked contract already exists")
+
+    let allow = Option.default(0, erc20_token(token).allowance(sender, Contract.address))
+    if (allow < amount)
+      abort("transferFrom sender to this failed")
+
+    put(state{ locked_contracts[locked_contract_id] = {token = token, secret_hash = secret_hash, recipient = recipient, sender = sender, endtime = endtime, amount = amount, withdrawn = false, refunded = false, preimage = ""}})
+
+    // Chain.event(Log_fund(locked_contract_id, token, secret_hash, recipient, sender, endtime, amount))
+    Chain.event(Log_fund(token, recipient, sender))
+    locked_contract_id
+
+  stateful entrypoint withdraw (locked_contract_id: hash, preimage: string) : bool =
+    is_locked_contract_exist (locked_contract_id)
+    check_secret_hash_matches (locked_contract_id, preimage)
+    withdrawable (locked_contract_id)
+
+    put(state{ locked_contracts[locked_contract_id].preimage = preimage })
+    put(state{ locked_contracts[locked_contract_id].withdrawn = true })
+
+    let locked_contract = state.locked_contracts[locked_contract_id]
+    erc20_token(locked_contract.token).transfer(locked_contract.recipient, locked_contract.amount)
+
+    Chain.event(Log_withdraw(locked_contract_id))
+    true
+
+  stateful entrypoint refund (locked_contract_id : hash) : bool =
+    is_locked_contract_exist (locked_contract_id)
+    refundable (locked_contract_id)
+
+    put(state{ locked_contracts[locked_contract_id].refunded = true })
+
+    let locked_contract = state.locked_contracts[locked_contract_id]
+    erc20_token(locked_contract.token).transfer(locked_contract.recipient, locked_contract.amount)
+
+    Chain.event(Log_refund(locked_contract_id))
+    true
+
+  entrypoint get_locked_contract (locked_contract_id : hash) : option(lockContract) =
+    Map.lookup(locked_contract_id, state.locked_contracts)
+
+  entrypoint have_locked_contract(locked_contract_id : hash) : bool =
+    Map.member(locked_contract_id, state.locked_contracts)

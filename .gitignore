@@ -6,3 +6,7 @@ node_modules/
 .coverage
 coverage.xml
 react/*
+*.aes.deploy.*
+aeproject/docker
+*.wallet
+third_party/
