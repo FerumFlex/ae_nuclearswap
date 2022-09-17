@@ -2,7 +2,28 @@
 
 include "Option.aes"
 include "String.aes"
-include "./FungibleTokenInterface.aes"
+
+contract interface FungibleTokenInterface =
+  record meta_info =
+    { name : string
+    , symbol : string
+    , decimals : int }
+  record allowance_accounts = { from_account : address, for_account : address }
+
+  datatype event =
+    Transfer(address, address, int)
+    | Allowance(address, address, int)
+
+  entrypoint aex9_extensions : ()                         => list(string)
+  entrypoint meta_info       : ()                         => meta_info
+  entrypoint total_supply    : ()                         => int
+  entrypoint owner           : ()                         => address
+  entrypoint balances        : ()                         => map(address, int)
+  entrypoint balance         : (address)                  => option(int)
+  entrypoint allowance       : (allowance_accounts)         => option(int)
+  stateful entrypoint transfer_allowance : (address, address, int) => unit
+  stateful entrypoint transfer        : (address, int)             => unit
+
 
 contract HTLC =
   datatype event =
