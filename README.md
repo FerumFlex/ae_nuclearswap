@@ -4,7 +4,7 @@ Allow to crosschain exchange tokens like USDT, USDC and other using HTLC contrac
 
 Approximately it looks like:
 
-![htlc flow](https://www.researchgate.net/profile/Jiahua-Xu/publication/346143775/figure/fig1/AS:961241971449858@1606189353771/Hash-time-lock-contract-HTLC.ppm)
+![htlc flow](https://www.researchgate.net/profile/Jiahua-Xu/publication/346143775/figure/fig1/AS:961241971449858@1606189353771/Hash-time-lock-contract-HTLC.ppm "Test")
 
 more information about HTLC you can read
 
