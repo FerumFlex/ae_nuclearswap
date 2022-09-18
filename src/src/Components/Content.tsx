@@ -19,10 +19,22 @@ const networks = [
 const bot_addr = "ak_4z2k6qMcDuaTkcd2CvrRWyZe8xFQ1RntyWKbDf6nH19PSdwxm";
 
 
+function pad(n: string, width: number, z = '0') {
+  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+}
+
+function hexdump(buf: ArrayBuffer) {
+  let view = new Uint8Array(buf);
+  let hex = Array.from(view).map(v => pad(v.toString(16), 2));
+  return hex.join(" ");
+}
+
+
 export function Content({aeSdk} : {aeSdk: any}) {
   const [fromNetwork, setfromNetwork] = useState<string>(networks[0].value);
   const [toNetwork, settoNetwork] = useState<string>(networks[1].value);
   const [isLoading, setIsLoading] = useState(false);
+  const [fromValue, setFromValue] = useState(0);
 
   const doExchange = async () => {
     setIsLoading(true);
@@ -31,7 +43,7 @@ export function Content({aeSdk} : {aeSdk: any}) {
       const aeTokenContract = await aeSdk.getContractInstance({ aci: aeToken.aci, bytecode: aeToken.bytecode, contractAddress: aeToken.address});
       const aeHtlcContract = await aeSdk.getContractInstance({ aci: aeHtlc.aci, bytecode: aeHtlc.bytecode, contractAddress: aeHtlc.address});
       const htlc_address = "ak" + aeHtlc.address.substr(2);
-      const amount = 100000;
+      const amount = fromValue * 1000000; // 6 number of digits
       const password = "testing";
       const secret_hash = sha256(password);
 
@@ -41,10 +53,16 @@ export function Content({aeSdk} : {aeSdk: any}) {
       await aeTokenContract.methods.create_allowance(htlc_address, amount);
       const unix = Date.now() + 60 * 10 * 1000; // 1 hour
 
-      await aeHtlcContract.methods.fund(aeToken.address, secret_hash, bot_addr, unix, amount);
+      const result = await aeHtlcContract.methods.fund(aeToken.address, secret_hash, bot_addr, unix, amount);
+      const lock_transaction_id = result.decodedResult;
+      console.log("lock contract id", hexdump(lock_transaction_id));
     } finally {
       setIsLoading(false)
     }
+  };
+
+  const onChangeValue = (v: any) => {
+    setFromValue(v);
   };
 
   return (
@@ -62,11 +80,11 @@ export function Content({aeSdk} : {aeSdk: any}) {
         <Paper withBorder radius={"lg"} shadow="lg" style={{padding: "10px", backgroundColor: "rgb(20, 21, 23)"}}>
           <Group position="apart" m={"xs"}>
             <Text size={"xs"}><strong>Send:</strong></Text>
-            <Text size={"xs"}><strong>Max:</strong></Text>
+            {/*<Text size={"xs"}><strong>Max:</strong></Text>*/}
           </Group>
           <Group position="apart" m={"xs"}>
-            <NumberInput style={{border: "0"}} variant="unstyled" defaultValue={0} />
-            <Text size={"sm"}>1000.0</Text>
+            <NumberInput style={{border: "0"}} variant="unstyled" value={fromValue} onChange={onChangeValue} defaultValue={0} />
+            {/*<Text size={"sm"}>1000.0</Text>*/}
           </Group>
         </Paper>
 
@@ -89,7 +107,7 @@ export function Content({aeSdk} : {aeSdk: any}) {
             <Text size={"xs"}>&nbsp;</Text>
           </Group>
           <Group position="apart" m={"xs"}>
-            <NumberInput readOnly style={{border: "0"}} variant="unstyled" defaultValue={0} />
+            <NumberInput readOnly style={{border: "0"}} variant="unstyled" value={fromValue} defaultValue={0} />
             <Text size={"sm"}>&nbsp;</Text>
           </Group>
         </Paper>
