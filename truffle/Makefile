@@ -1,5 +1,8 @@
 deploy:
 	truffle deploy
 
-deploy-rinkeby:
-	truffle migrate --network rinkeby
+deploy-goerli:
+	truffle migrate --network goerli
+
+networks:
+	truffle networks

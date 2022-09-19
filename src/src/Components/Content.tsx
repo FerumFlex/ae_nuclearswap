@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Text, Paper, Stack, Select, Group, Center, NumberInput, Button } from '@mantine/core';
 import { IconExchange } from '@tabler/icons';
 import aeToken from '../contracts/ae_token.json';
 import aeHtlc from '../contracts/ae_htlc.json';
+import { AeWalletContext, EthWalletContext } from '../store/Contexts';
+import { observer } from "mobx-react-lite"
+
+
 var sha256 = require('js-sha256');
 
 const networks = [
@@ -30,31 +34,40 @@ function hexdump(buf: ArrayBuffer) {
 }
 
 
-export function Content({aeSdk} : {aeSdk: any}) {
+export const Content = observer( () => {
+  const aeWallet = React.useContext(AeWalletContext);
+  const ethWallet = React.useContext(EthWalletContext);
   const [fromNetwork, setfromNetwork] = useState<string>(networks[0].value);
   const [toNetwork, settoNetwork] = useState<string>(networks[1].value);
   const [isLoading, setIsLoading] = useState(false);
   const [fromValue, setFromValue] = useState(0);
 
   const doExchange = async () => {
+    if (aeWallet.aeSdk === null) {
+      return
+    };
+
     setIsLoading(true);
     try {
-      const address = await aeSdk.address();
-      const aeTokenContract = await aeSdk.getContractInstance({ aci: aeToken.aci, bytecode: aeToken.bytecode, contractAddress: aeToken.address});
-      const aeHtlcContract = await aeSdk.getContractInstance({ aci: aeHtlc.aci, bytecode: aeHtlc.bytecode, contractAddress: aeHtlc.address});
       const htlc_address = "ak" + aeHtlc.address.substr(2);
       const amount = fromValue * 1000000; // 6 number of digits
       const password = "testing";
       const secret_hash = sha256(password);
 
       // mint tokens
-      await aeTokenContract.methods.mint(address, amount);
+      let result : any = null;
+      result = await aeWallet.usdtContract.methods.allowance({from_account: aeWallet.address, for_account: htlc_address})
+      let allowed = result.decodedResult;
+      if (allowed === undefined) {
+        await aeWallet.usdtContract.methods.create_allowance(htlc_address, amount);
+      } else if (allowed < amount) {
+        await aeWallet.usdtContract.methods.change_allowance(htlc_address, amount);
+      }
 
-      await aeTokenContract.methods.create_allowance(htlc_address, amount);
       const unix = Date.now() + 60 * 10 * 1000; // 1 hour
-
-      const result = await aeHtlcContract.methods.fund(aeToken.address, secret_hash, bot_addr, unix, amount);
+      result = await aeWallet.htlcContract.methods.fund(aeToken.address, secret_hash, bot_addr, ethWallet.address, unix, amount);
       const lock_transaction_id = result.decodedResult;
+
       console.log("lock contract id", hexdump(lock_transaction_id));
     } finally {
       setIsLoading(false)
@@ -72,7 +85,7 @@ export function Content({aeSdk} : {aeSdk: any}) {
           <Text size={"sm"}><strong>From:</strong></Text>
           <Select
             radius={"lg"}
-            data={networks}
+            data={[networks[0]]}
             value={fromNetwork}
           />
         </Group>
@@ -80,11 +93,11 @@ export function Content({aeSdk} : {aeSdk: any}) {
         <Paper withBorder radius={"lg"} shadow="lg" style={{padding: "10px", backgroundColor: "rgb(20, 21, 23)"}}>
           <Group position="apart" m={"xs"}>
             <Text size={"xs"}><strong>Send:</strong></Text>
-            {/*<Text size={"xs"}><strong>Max:</strong></Text>*/}
+            <Text size={"xs"}><strong>Max:</strong></Text>
           </Group>
           <Group position="apart" m={"xs"}>
             <NumberInput style={{border: "0"}} variant="unstyled" value={fromValue} onChange={onChangeValue} defaultValue={0} />
-            {/*<Text size={"sm"}>1000.0</Text>*/}
+            <Text size={"sm"}>{aeWallet.usdtBalanceFormat.toString()}</Text>
           </Group>
         </Paper>
 
@@ -96,7 +109,7 @@ export function Content({aeSdk} : {aeSdk: any}) {
           <Text size={"sm"}><strong>To:</strong></Text>
           <Select
             radius={"lg"}
-            data={networks}
+            data={[networks[1]]}
             value={toNetwork}
           />
         </Group>
@@ -118,4 +131,4 @@ export function Content({aeSdk} : {aeSdk: any}) {
       </Paper>
     </Stack>
   );
-}
+});

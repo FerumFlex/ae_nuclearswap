@@ -79,10 +79,9 @@ const useStyles = createStyles((theme) => ({
 
 interface HeaderResponsiveProps {
   links: { link: string; label: string}[];
-  aeSdk: any
 }
 
-export function HeaderResponsive({aeSdk, links }: HeaderResponsiveProps) {
+export function HeaderResponsive({links }: HeaderResponsiveProps) {
   const [opened, { toggle, close }] = useDisclosure(false);
   const [active, setActive] = useState(links.length ? links[0].link : "");
   const { classes, cx } = useStyles();
@@ -113,7 +112,7 @@ export function HeaderResponsive({aeSdk, links }: HeaderResponsiveProps) {
           )}
         </Transition>
 
-        <Wallet aeSdk={aeSdk} />
+        <Wallet />
       </Container>
     </Header>
   );

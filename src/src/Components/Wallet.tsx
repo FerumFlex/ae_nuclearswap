@@ -1,22 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@mantine/core';
-import { hooks, metaMask } from '../connectors/metaMask';
+import { metaMask } from '../connectors/metaMask';
+import { AeWalletContext, EthWalletContext } from '../store/Contexts';
+import { observer } from "mobx-react-lite"
 
-const { useChainId, useAccounts, useIsActivating, useIsActive, useProvider, useENSNames } = hooks
 
-
-export function Wallet({aeSdk}: {aeSdk: any}) {
-  const chainId = useChainId();
-  const accounts = useAccounts();
-  const isActivating = useIsActivating();
-  const [address, setAddress] = useState("");
-
-  const isActive = useIsActive();
-
-  const provider = useProvider();
-  const ENSNames = useENSNames(provider);
-
-  const [error, setError] = useState(undefined)
+export const Wallet = observer(() => {
+  let aeWallet = React.useContext(AeWalletContext);
+  let ethWallet = React.useContext(EthWalletContext);
 
   // attempt to connect eagerly on mount
   useEffect(() => {
@@ -25,15 +16,6 @@ export function Wallet({aeSdk}: {aeSdk: any}) {
     })
   }, []);
 
-  useEffect(() => {
-    if (!aeSdk) {
-      return;
-    }
-    (async() => {
-      const _address = await aeSdk.address()
-      setAddress(_address);
-    })();
-  }, [aeSdk])
 
   const onConnect = () => {
     void metaMask.activate().catch(() => {
@@ -43,8 +25,11 @@ export function Wallet({aeSdk}: {aeSdk: any}) {
 
   return (
     <div>
-      <p>ETH: { accounts && accounts.length ? accounts[0] : <Button onClick={onConnect}>Connect</Button>}</p>
-      <p>AE: {address}</p>
+      <p>
+        ETH: { ethWallet.address ? ethWallet.address : <Button onClick={onConnect}>Connect</Button>}
+        <br />
+        AE: {aeWallet.address}
+      </p>
     </div>
   )
-}
+})

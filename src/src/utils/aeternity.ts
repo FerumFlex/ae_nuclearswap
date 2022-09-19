@@ -1,49 +1,52 @@
-import { AeSdk, MemoryAccount, AeSdkAepp, BrowserWindowMessageConnection, walletDetector, Node, SUBSCRIPTION_TYPES } from "@aeternity/aepp-sdk";
-import { generateKeyPair } from '@aeternity/aepp-sdk'
+import { AeSdkAepp, BrowserWindowMessageConnection, walletDetector, Node, SUBSCRIPTION_TYPES } from "@aeternity/aepp-sdk";
+import AeWallet from "../store/AeWallet";
 
 const TESTNET_NODE_URL = 'https://testnet.aeternity.io';
 const MAINNET_NODE_URL = 'https://mainnet.aeternity.io';
 const COMPILER_URL = 'https://compiler.aepps.com';
 
-const senderAccount = new MemoryAccount({
-  keypair: generateKeyPair()
-});
 
+export const initSdk = async(aeWallet : AeWallet) => {
+  if (aeWallet.aeSdk) {
+    return aeWallet.aeSdk
+  }
 
-// export const scanForWallet = async (aeSdk: AeSdk) => {
-//   return new Promise((resolve, reject) => {
-//     if (!aeSdk) reject("Failed! SDK is not initialized");
-//     const handleNewWallet = async ({ wallets, newWallet } : any) => {
-//       const wallet = newWallet || Object.values(wallets)[0]
-//       stopScan();
-//       await aeSdk.connectToWallet(await wallet.getConnection());
-//       await aeSdk.subscribeAddress(
-//         // @ts-ignore
-//         SUBSCRIPTION_TYPES.subscribe,
-//         "current"
-//       );
-//       resolve(wallet);
-//     };
-//     const scannerConnection = new BrowserWindowMessageConnection();
-//     const stopScan = walletDetector(
-//       scannerConnection,
-//       handleNewWallet
-//     )
-//   });
-// };
-
-export const initSdk = async() => {
-  const aeSdk = new AeSdk({
-    name: "aeapp-demo",
+  let aeSdk = new AeSdkAepp({
+    name: 'Simple æpp',
     nodes: [
-      { name: 'testnet', instance: new Node(TESTNET_NODE_URL) }
+      { name: 'testnet', instance: new Node(TESTNET_NODE_URL) },
+      { name: 'mainnet', instance: new Node(MAINNET_NODE_URL) },
     ],
     compilerUrl: COMPILER_URL,
-    onAddressChange: (p: any) => console.info("OnAddressChange", p),
-    onDisconnect: (p: any) => console.info("onDisconnect", p),
-    onNetworkChange: (p: any) => console.info("onNetworkChange", p)
+    onNetworkChange: async ({ networkId }) => {
+      const [{ name }] = (await aeSdk.getNodesInPool()).filter((node) => node.nodeNetworkId === networkId);
+      aeSdk.selectNode(name);
+      console.log("networkId", networkId);
+    },
+    onAddressChange: ({ current }) => console.log(current),
+    onDisconnect: () => console.log('Aepp is disconnected')
   });
-  await aeSdk.addAccount(senderAccount, { select: true });
+
+  let address = await scanForWallet(aeSdk);
+
+  await aeWallet.setSdk(aeSdk, address);
 
   return aeSdk;
+}
+
+export const scanForWallet = async (aeSdk: AeSdkAepp) : Promise<string> => {
+  return new Promise((resolve) => {
+      const handleWallets = async ({ wallets, newWallet}: {wallets: any, newWallet? : any | undefined}) => {
+      newWallet = newWallet || Object.values(wallets)[0];
+      stopScan();
+
+      let walletInfo = await aeSdk.connectToWallet(newWallet.getConnection());
+      const { address: { current } } = await aeSdk.subscribeAddress(SUBSCRIPTION_TYPES.subscribe, 'connected')
+      let address = Object.keys(current)[0];
+      resolve(address);
+    }
+
+    const scannerConnection = new BrowserWindowMessageConnection();
+    const stopScan = walletDetector(scannerConnection, handleWallets);
+  })
 }

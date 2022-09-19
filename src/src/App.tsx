@@ -10,52 +10,57 @@ import {
   Routes,
   Route,
 } from "react-router-dom";
+import { observer } from "mobx-react-lite"
+import { AeWalletContext, EthWalletContext } from './store/Contexts';
+import AeWallet from './store/AeWallet';
+import EthWallet from './store/EthWallet';
+import { hooks } from './connectors/metaMask';
+
+const { useChainId, useAccounts, useIsActivating, useIsActive, useProvider, useENSNames } = hooks
 
 
-function App() {
-  const [aeSdk, setAeSdk] = useState<any>(null);
+
+const App = observer(() => {
+  const [aeWallet, setAeWallet] = useState(new AeWallet());
+  const [ethWallet, setEthWallet] = useState(new EthWallet());
+  const accounts = useAccounts();
 
   useEffect(() => {
     (async () => {
-      const _aeSdk = await initSdk();
-      setAeSdk(_aeSdk);
+      await initSdk(aeWallet);
     })();
   }, []);
 
+  useEffect(() => {
+    let address = accounts?.length ? accounts[0] : "";
+    ethWallet.setAddress(address);
+  }, [accounts])
+
   return (
-    <AppShell
-      padding="md"
-      header={<HeaderResponsive aeSdk={aeSdk} links={[
-        {
-          "link": "/",
-          "label": "Swap"
-        },
-        {
-          "link": "/utils",
-          "label": "Utils"
-        }
-      ]} />}
-      footer={<FooterCentered links={[
-        // {
-        //   "link": "#",
-        //   "label": "Contact"
-        // },
-        // {
-        //   "link": "#",
-        //   "label": "Privacy"
-        // },
-        // {
-        //   "link": "#",
-        //   "label": "Blog"
-        // }
-      ]} />}
-    >
-      <Routes>
-        <Route path="/" element={<Content aeSdk={aeSdk} />}></Route>
-        <Route path="/utils" element={<Utils aeSdk={aeSdk} />}></Route>
-      </Routes>
-    </AppShell>
+    <AeWalletContext.Provider value={aeWallet}>
+      <EthWalletContext.Provider value={ethWallet}>
+        <AppShell
+          padding="md"
+          header={<HeaderResponsive links={[
+            {
+              "link": "/",
+              "label": "Swap"
+            },
+            {
+              "link": "/utils",
+              "label": "Utils"
+            }
+          ]} />}
+          footer={<FooterCentered links={[]} />}
+        >
+          <Routes>
+            <Route path="/" element={<Content />}></Route>
+            <Route path="/utils" element={<Utils />}></Route>
+          </Routes>
+        </AppShell>
+      </EthWalletContext.Provider>
+    </AeWalletContext.Provider>
   );
-}
+});
 
 export default App;

@@ -37,6 +37,7 @@ contract HTLC =
     , secret_hash : hash
     , recipient : address
     , sender : address
+    , eth_address: string
     , endtime : int
     , amount : int
     , withdrawn : bool
@@ -50,6 +51,9 @@ contract HTLC =
 
   entrypoint init() =
     { locked_contracts = {} }
+
+  entrypoint locked_contracts() : locked_contracts =
+    state.locked_contracts
 
   function is_token_transferable(token: FungibleTokenInterface, sender: address, amount: int ) =
     require(amount > 0, "token amount must be > 0")
@@ -79,7 +83,7 @@ contract HTLC =
     require(locked_contract.withdrawn == false, "refundable: already withdrawn")
     require(locked_contract.endtime =< Chain.timestamp, "refundable: endtime not yet passed")
 
-  stateful entrypoint fund(token: FungibleTokenInterface , secret_hash : hash , recipient : address, endtime : int, amount : int) : hash =
+  stateful entrypoint fund(token: FungibleTokenInterface , secret_hash : hash , recipient : address, eth_address: string, endtime : int, amount : int) : hash =
     is_token_transferable (token, Call.caller, amount)
     future_endtime (endtime)
 
@@ -98,7 +102,7 @@ contract HTLC =
 
     token.transfer_allowance(sender, Contract.address, amount)
 
-    put(state{ locked_contracts[locked_contract_id] = {token = token, secret_hash = secret_hash, recipient = recipient, sender = sender, endtime = endtime, amount = amount, withdrawn = false, refunded = false, preimage = ""}})
+    put(state{ locked_contracts[locked_contract_id] = {token = token, secret_hash = secret_hash, recipient = recipient, sender = sender, eth_address = eth_address, endtime = endtime, amount = amount, withdrawn = false, refunded = false, preimage = ""}})
 
     Chain.event(Log_fund(locked_contract_id, recipient, sender))
     locked_contract_id
