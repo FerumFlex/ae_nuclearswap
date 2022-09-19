@@ -4,16 +4,21 @@ import { AppShell } from '@mantine/core';
 import { HeaderResponsive } from './Components/Header';
 import { FooterCentered } from './Components/Footer';
 import { Content } from './Components/Content';
+import { Utils } from './Components/Utils';
 import { initSdk } from './utils/aeternity';
+import {
+  Routes,
+  Route,
+} from "react-router-dom";
+
 
 function App() {
-  const [sdkReady, setSdkReady] = useState(false);
   const [aeSdk, setAeSdk] = useState<any>(null);
 
   useEffect(() => {
     (async () => {
-      const aeSdk = await initSdk();
-      setAeSdk(aeSdk);
+      const _aeSdk = await initSdk();
+      setAeSdk(_aeSdk);
     })();
   }, []);
 
@@ -21,22 +26,14 @@ function App() {
     <AppShell
       padding="md"
       header={<HeaderResponsive aeSdk={aeSdk} links={[
-        // {
-        //   "link": "/about",
-        //   "label": "Features"
-        // },
-        // {
-        //   "link": "/pricing",
-        //   "label": "Pricing"
-        // },
-        // {
-        //   "link": "/learn",
-        //   "label": "Learn"
-        // },
-        // {
-        //   "link": "/community",
-        //   "label": "Community"
-        // }
+        {
+          "link": "/",
+          "label": "Swap"
+        },
+        {
+          "link": "/utils",
+          "label": "Utils"
+        }
       ]} />}
       footer={<FooterCentered links={[
         // {
@@ -53,7 +50,10 @@ function App() {
         // }
       ]} />}
     >
-      <Content aeSdk={aeSdk} />
+      <Routes>
+        <Route path="/" element={<Content aeSdk={aeSdk} />}></Route>
+        <Route path="/utils" element={<Utils aeSdk={aeSdk} />}></Route>
+      </Routes>
     </AppShell>
   );
 }

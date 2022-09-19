@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { createStyles, Header, Container, Group, Burger, Paper, Transition } from '@mantine/core';
+import { createStyles, Header, Container, Group, Burger, Paper, Transition, Anchor } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Logo } from './Logo';
 import { ThemeIcon } from '@mantine/core';
 import { Wallet } from './Wallet';
+import { Link } from 'react-router-dom';
 
 const HEADER_HEIGHT = 60;
 
@@ -87,18 +88,9 @@ export function HeaderResponsive({aeSdk, links }: HeaderResponsiveProps) {
   const { classes, cx } = useStyles();
 
   const items = links.map((link) => (
-    <a
-      key={link.label}
-      href={link.link}
-      className={cx(classes.link, { [classes.linkActive]: active === link.link })}
-      onClick={(event) => {
-        event.preventDefault();
-        setActive(link.link);
-        close();
-      }}
-    >
-      {link.label}
-    </a>
+    <span key={link.link}>
+      <Anchor size="md" component={Link} to={link.link}>{link.label}</Anchor>&nbsp;|&nbsp;
+    </span>
   ));
 
   return (

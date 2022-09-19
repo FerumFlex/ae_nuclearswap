@@ -45,10 +45,5 @@ export const initSdk = async() => {
   });
   await aeSdk.addAccount(senderAccount, { select: true });
 
-  const address = await aeSdk.address();
-  await fetch(`https://faucet.aepps.com/account/${address}`, {
-    method: "POST"
-  });
-
   return aeSdk;
 }
