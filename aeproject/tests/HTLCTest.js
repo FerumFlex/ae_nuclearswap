@@ -4,6 +4,7 @@ var crypto = require('crypto');
 
 const HTLC_SOURCE = './contracts/HTLC.aes';
 const TOKEN_SOURCE = './contracts/FungibleTokenFull.aes';
+const ETH_ADDRESS = '0x523684cFEdA2d2c0B294d1B52e31c1dB38f5fe75';
 
 function delay(ms) {
   return new Promise( resolve => setTimeout(resolve, ms) );
@@ -54,7 +55,7 @@ describe('HTLC', () => {
     let result = await token_contract.methods.create_allowance(htlc_address, amount);
     assert.equal(result.result.returnType, "ok");
 
-    result = await htlc_contract.methods.fund(token_address, secret_hash, another_address, unix, amount);
+    result = await htlc_contract.methods.fund(token_address, secret_hash, another_address, ETH_ADDRESS, unix, amount);
     assert.equal(result.result.returnType, "ok");
     let lock_contract_id = result.decodedResult;
 
@@ -81,7 +82,7 @@ describe('HTLC', () => {
     let result = await token_contract.methods.create_allowance(htlc_address, amount);
     assert.equal(result.result.returnType, "ok");
 
-    result = await htlc_contract.methods.fund(token_address, secret_hash, another_address, unix, amount);
+    result = await htlc_contract.methods.fund(token_address, secret_hash, another_address, ETH_ADDRESS, unix, amount);
     assert.equal(result.result.returnType, "ok");
     let lock_contract_id = result.decodedResult;
 
