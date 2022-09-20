@@ -11,9 +11,10 @@ import {
   Route,
 } from "react-router-dom";
 import { observer } from "mobx-react-lite"
-import { AeWalletContext, EthWalletContext } from './store/Contexts';
+import { AeWalletContext, EthWalletContext, ContractsContext } from './store/Contexts';
 import AeWallet from './store/AeWallet';
 import EthWallet from './store/EthWallet';
+import Contracts from './store/Contracts';
 import { hooks } from './connectors/metaMask';
 
 const { useChainId, useAccounts, useIsActivating, useIsActive, useProvider, useENSNames } = hooks
@@ -23,6 +24,7 @@ const { useChainId, useAccounts, useIsActivating, useIsActive, useProvider, useE
 const App = observer(() => {
   const [aeWallet, setAeWallet] = useState(new AeWallet());
   const [ethWallet, setEthWallet] = useState(new EthWallet());
+  const [contracts, setCOntracts] = useState(new Contracts());
   const accounts = useAccounts();
 
   useEffect(() => {
@@ -39,25 +41,27 @@ const App = observer(() => {
   return (
     <AeWalletContext.Provider value={aeWallet}>
       <EthWalletContext.Provider value={ethWallet}>
-        <AppShell
-          padding="md"
-          header={<HeaderResponsive links={[
-            {
-              "link": "/",
-              "label": "Swap"
-            },
-            {
-              "link": "/utils",
-              "label": "Utils"
-            }
-          ]} />}
-          footer={<FooterCentered links={[]} />}
-        >
-          <Routes>
-            <Route path="/" element={<Content />}></Route>
-            <Route path="/utils" element={<Utils />}></Route>
-          </Routes>
-        </AppShell>
+        <ContractsContext.Provider value={contracts}>
+          <AppShell
+            padding="md"
+            header={<HeaderResponsive links={[
+              {
+                "link": "/",
+                "label": "Swap"
+              },
+              {
+                "link": "/utils",
+                "label": "Utils"
+              }
+            ]} />}
+            footer={<FooterCentered links={[]} />}
+          >
+            <Routes>
+              <Route path="/" element={<Content />}></Route>
+              <Route path="/utils" element={<Utils />}></Route>
+            </Routes>
+          </AppShell>
+        </ContractsContext.Provider>
       </EthWalletContext.Provider>
     </AeWalletContext.Provider>
   );

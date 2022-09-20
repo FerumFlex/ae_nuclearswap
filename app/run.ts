@@ -3,6 +3,7 @@ const aeToken = require('./contracts/ae_token.json');
 const aeHtlc = require('./contracts/ae_htlc.json');
 const ethToken = require('./contracts/USDT.json');
 const ethHtlc = require('./contracts/HTLC_ERC20.json');
+var Buffer = require('buffer').Buffer;
 
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const Web3 = require("web3");
@@ -32,6 +33,8 @@ const senderAccount = new MemoryAccount({
   }
 });
 
+
+let HEX_RUNNED : string[] = [];
 
 
 const main = async () => {
@@ -90,7 +93,7 @@ const main = async () => {
 const filterContracts = (contracts: any[]) : any[] => {
   const result : any[] = [];
 
-  contracts.forEach((contract) => {
+  contracts.forEach((contract, lock_id) => {
     if (contract.token !== aeToken["address"]) {
       return;
     }
@@ -107,17 +110,40 @@ const filterContracts = (contracts: any[]) : any[] => {
       return
     }
 
+    contract.lock_id = lock_id;
     result.push(contract);
   });
 
   return result;
 }
 
+function pad(n: string, width: number, z = '0') {
+  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+}
+
+function hexdump(buf: ArrayBuffer) {
+  let view = new Uint8Array(buf);
+  let hex = Array.from(view).map(v => pad(v.toString(16), 2));
+  return hex.join("");
+}
+
 const processLockContract = async (contracts: any[], htlc_token_contract: any) => {
   let result;
   for (let contract of contracts) {
-    result = await htlc_token_contract.fund(TOKEN_ADDRESS, contract.secret_hash, contract.eth_address, SELF_ADDRESS, contract.endtime, contract.amount);
-    console.log(result);
+    let hex = hexdump(contract.lock_id);
+    if (HEX_RUNNED.indexOf(hex) !== -1) {
+      continue;
+    }
+    HEX_RUNNED.push(hex);
+
+    console.log(`Contract ${contract} ${hex}`);
+    try {
+      result = await htlc_token_contract.fund(TOKEN_ADDRESS, Buffer.from(contract.secret_hash), contract.eth_address, SELF_ADDRESS, contract.endtime, contract.amount);
+      let locked_contract_id = result.logs[0].args['0'];
+      console.log(`Lock contract id ${locked_contract_id}`);
+    } catch (err) {
+      console.log(err);
+    }
   }
 }
 

@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { Text, Paper, Stack, Select, Group, Center, NumberInput, Button } from '@mantine/core';
-import { IconExchange } from '@tabler/icons';
+import { Text, Paper, Stack, Select, Group, Center, NumberInput, Button, Timeline } from '@mantine/core';
+import { IconExchange, IconCheck } from '@tabler/icons';
 import aeToken from '../contracts/ae_token.json';
 import aeHtlc from '../contracts/ae_htlc.json';
-import { AeWalletContext, EthWalletContext } from '../store/Contexts';
-import { observer } from "mobx-react-lite"
+import ethHtlc from '../contracts/HTLC_ERC20.json';
+import { AeWalletContext, EthWalletContext, ContractsContext } from '../store/Contexts';
+import { observer } from "mobx-react-lite";
+import { showNotification } from '@mantine/notifications';
+import { hooks } from '../connectors/metaMask';
 
+const { useChainId, useAccounts, useIsActivating, useIsActive, useProvider, useENSNames } = hooks
+
+const Buffer = require('buffer').Buffer;
+const Web3 = require('web3');
 
 var sha256 = require('js-sha256');
 
@@ -33,28 +40,58 @@ function hexdump(buf: ArrayBuffer) {
   return hex.join(" ");
 }
 
+function makeid(length : number) {
+  var result           = '';
+  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var charactersLength = characters.length;
+  for ( var i = 0; i < length; i++ ) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+ }
+ return result;
+}
+
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
 
 export const Content = observer( () => {
   const aeWallet = React.useContext(AeWalletContext);
   const ethWallet = React.useContext(EthWalletContext);
+  const contracts = React.useContext(ContractsContext);
+  const accounts = useAccounts();
   const [fromNetwork, setfromNetwork] = useState<string>(networks[0].value);
   const [toNetwork, settoNetwork] = useState<string>(networks[1].value);
   const [isLoading, setIsLoading] = useState(false);
   const [fromValue, setFromValue] = useState(0);
+  const [currentAction, setCurrentAction] = useState<number | null>(null);
 
   const doExchange = async () => {
     if (aeWallet.aeSdk === null) {
-      return
+      showNotification({
+        color: 'red',
+        title: 'Error',
+        message: 'Please connect Superhero wallet',
+      });
+      return;
     };
+
+    if (accounts === undefined) {
+      showNotification({
+        color: 'red',
+        title: 'Error',
+        message: 'Please connect Metamask wallet',
+      });
+      return;
+    }
 
     setIsLoading(true);
     try {
       const htlc_address = "ak" + aeHtlc.address.substr(2);
       const amount = fromValue * 1000000; // 6 number of digits
-      const password = "testing";
+      const password = makeid(12);
       const secret_hash = sha256(password);
 
-      // mint tokens
+      // allowance tokens
+      setCurrentAction(0);
       let result : any = null;
       result = await aeWallet.usdtContract.methods.allowance({from_account: aeWallet.address, for_account: htlc_address})
       let allowed = result.decodedResult;
@@ -64,13 +101,68 @@ export const Content = observer( () => {
         await aeWallet.usdtContract.methods.change_allowance(htlc_address, amount);
       }
 
-      const unix = Date.now() + 60 * 10 * 1000; // 1 hour
+      setCurrentAction(1);
+      const unix = Date.now() + 1 * 60 * 10 * 1000; // 1 hour
       result = await aeWallet.htlcContract.methods.fund(aeToken.address, secret_hash, bot_addr, ethWallet.address, unix, amount);
-      const lock_transaction_id = result.decodedResult;
+      const lock_contract_id = result.decodedResult;
 
-      console.log("lock contract id", hexdump(lock_transaction_id));
+      console.log("lock contract id ", hexdump(lock_contract_id));
+      console.log("password ", password);
+      console.log("secret_hash ", secret_hash);
+
+      setCurrentAction(2);
+      // @ts-ignore
+      const web3 = new Web3(window.ethereum);
+      const id: string = await web3.eth.net.getId();
+      // @ts-ignore
+      const deployedNetwork: any = ethHtlc.networks[id];
+      const contract = new web3.eth.Contract(
+        ethHtlc.abi,
+        deployedNetwork.address,
+      );
+
+      setCurrentAction(3);
+      const fromBlock = await web3.eth.getBlockNumber();
+      let events;
+      let time_to_wait = 120;
+      while (true) {
+        events = await contract.getPastEvents('log_fund', {fromBlock: fromBlock});
+        for (let event of events) {
+          if (event.event !== "log_fund") {
+            continue;
+          }
+          if (event.returnValues.secret_hash.substr(2) !== secret_hash) {
+            continue;
+          }
+          if (event) {
+            const new_contract_id = event.returnValues.locked_contract_id.substr(2);
+            await contract.methods.withdraw(Buffer.from(new_contract_id, "hex"), password).send({ from: accounts[0] });
+
+            showNotification({
+              color: 'green',
+              title: 'Success',
+              message: 'You got your tokens',
+            });
+            return;
+          }
+        }
+        await delay(5000);
+
+        time_to_wait -= 5;
+        if (time_to_wait <= 0) {
+          showNotification({
+            color: 'red',
+            title: 'Error',
+            message: 'Can not finish exchange',
+          });
+          return;
+        }
+      }
+
+      contracts.addContract(lock_contract_id, secret_hash, password);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
+      setCurrentAction(null);
     }
   };
 
@@ -128,6 +220,25 @@ export const Content = observer( () => {
         <Center style={{paddingTop: "20px"}}>
           <Button loading={isLoading} size={"lg"} radius={"md"} onClick={doExchange}>Exchange</Button>
         </Center>
+
+        { (currentAction !== null) &&
+          <Center style={{paddingTop: "20px"}}>
+            <Timeline active={currentAction} bulletSize={24} lineWidth={2}>
+              <Timeline.Item bullet={<IconCheck size={12} />} title="Approve">
+                <Text color="dimmed" size="sm">Approve token to spend</Text>
+              </Timeline.Item>
+              <Timeline.Item bullet={<IconCheck size={12} />} title="Fund">
+                <Text color="dimmed" size="sm">Fund contract with tokens</Text>
+              </Timeline.Item>
+              <Timeline.Item bullet={<IconCheck size={12} />} title="Waiting">
+                <Text color="dimmed" size="sm">Waiting for fund from other side</Text>
+              </Timeline.Item>
+              <Timeline.Item bullet={<IconCheck size={12} />} title="Withdraw">
+                <Text color="dimmed" size="sm">Withdraw funds</Text>
+              </Timeline.Item>
+            </Timeline>
+          </Center>
+        }
       </Paper>
     </Stack>
   );

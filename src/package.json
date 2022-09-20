@@ -38,7 +38,8 @@
     "react-router-dom": "^6.4.0",
     "react-scripts": "5.0.1",
     "typescript": "^4.8.2",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "web3": "^1.8.0"
   },
   "scripts": {
     "deploy": "react-scripts build && aws s3 sync build/ s3://nuclearswap-react-origin --delete && aws cloudfront create-invalidation --distribution-id EFZQDY50WK8DF --paths '/index.html' && rm -rf build/",

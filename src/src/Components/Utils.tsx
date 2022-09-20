@@ -48,16 +48,6 @@ export function Utils() {
     }
   };
 
-  const doEthFaucetUsdt = async () => {
-    setEthFauceUsdttLoading(true);
-
-    try {
-
-    } finally {
-      setEthFauceUsdttLoading(false);
-    }
-  }
-
   return (
     <Stack align="center" justify="center" style={{backgroundColor: "unset", height: "100%"}}>
       <Paper withBorder radius="md" shadow="lg" p="md" style={{width: "500px", padding: "20px"}}>
@@ -67,10 +57,8 @@ export function Utils() {
         <Button loading={aeFaucetLoading} onClick={doEternityFaucet}>Get Aeternity</Button>
         <h2>Aeternity USDT faucet</h2>
         <Button loading={aeFauceUsdttLoading} onClick={doEternityFaucetUsdt}>Get Aeternity USDT</Button>
-        <h2>Rinkeyby faucet</h2>
-        <Anchor target="_blank" href="https://rinkebyfaucet.com/">Eth rinkeyby Faucet</Anchor>
-        <h2>Rinkeyby USDT faucet</h2>
-        <Button loading={ethFauceUsdttLoading} onClick={doEthFaucetUsdt}>Get Aeternity USDT</Button>
+        <h2>Goerli faucet</h2>
+        <Anchor target="_blank" href="https://goerlifaucet.com/">Eth goerli Faucet</Anchor>
       </Paper>
     </Stack>
   )
