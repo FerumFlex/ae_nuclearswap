@@ -121,7 +121,6 @@ export const Content = observer( () => {
         deployedNetwork.address,
       );
 
-      setCurrentAction(3);
       const fromBlock = await web3.eth.getBlockNumber();
       let events;
       let time_to_wait = 120;
@@ -135,6 +134,7 @@ export const Content = observer( () => {
             continue;
           }
           if (event) {
+            setCurrentAction(3);
             const new_contract_id = event.returnValues.locked_contract_id.substr(2);
             await contract.methods.withdraw(Buffer.from(new_contract_id, "hex"), password).send({ from: accounts[0] });
 
