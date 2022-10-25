@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { MantineThemeOverride, MantineProvider } from '@mantine/core';
 import { BrowserRouter } from "react-router-dom";
 import { NotificationsProvider } from '@mantine/notifications';
 import store, { StoreContext } from './store';
@@ -12,20 +11,13 @@ const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 
-const myTheme: MantineThemeOverride = {
-  colorScheme: 'dark',
-  defaultRadius: 0,
-};
-
 root.render(
   <React.StrictMode>
     <StoreContext.Provider value={store}>
       <NotificationsProvider position="top-right">
-        <MantineProvider theme={myTheme} withGlobalStyles withNormalizeCSS>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </MantineProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
       </NotificationsProvider>
     </StoreContext.Provider>
   </React.StrictMode>

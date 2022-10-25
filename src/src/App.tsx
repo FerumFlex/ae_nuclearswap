@@ -13,13 +13,22 @@ import {
 import { observer } from "mobx-react-lite"
 import { useStore } from './store';
 import { hooks } from './connectors/metaMask';
+import { MantineThemeOverride, MantineProvider, ColorSchemeProvider, ColorScheme } from '@mantine/core';
 
 const { useChainId, useAccounts, useIsActivating, useIsActive, useProvider, useENSNames } = hooks
 
 
+const myTheme: MantineThemeOverride = {
+  colorScheme: 'dark',
+  defaultRadius: 0,
+};
+
 const App = observer(() => {
   const accounts = useAccounts();
   const {aeWallet, ethWallet} = useStore()
+  const [colorScheme, setColorScheme] = useState<ColorScheme>('light');
+  const toggleColorScheme = (value?: ColorScheme) =>
+    setColorScheme(value || (colorScheme === 'dark' ? 'light' : 'dark'));
 
   useEffect(() => {
     (async () => {
@@ -33,25 +42,29 @@ const App = observer(() => {
   }, [accounts, ethWallet])
 
   return (
-    <AppShell
-      padding="md"
-      header={<HeaderResponsive links={[
-        {
-          "link": "/",
-          "label": "Swap"
-        },
-        {
-          "link": "/utils",
-          "label": "Utils"
-        }
-      ]} />}
-      footer={<FooterCentered links={[]} />}
-    >
-      <Routes>
-        <Route path="/" element={<Content />}></Route>
-        <Route path="/utils" element={<Utils />}></Route>
-      </Routes>
-    </AppShell>
+    <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
+      <MantineProvider theme={{ colorScheme }} withGlobalStyles withNormalizeCSS>
+        <AppShell
+          padding="md"
+          header={<HeaderResponsive links={[
+            {
+              "link": "/",
+              "label": "Swap"
+            },
+            {
+              "link": "/utils",
+              "label": "Utils"
+            }
+          ]} />}
+          footer={<FooterCentered links={[]} />}
+        >
+          <Routes>
+            <Route path="/" element={<Content />}></Route>
+            <Route path="/utils" element={<Utils />}></Route>
+          </Routes>
+        </AppShell>
+      </MantineProvider>
+    </ColorSchemeProvider>
   );
 });
 
