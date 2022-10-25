@@ -14,7 +14,6 @@ export const EthWallet = () => {
     })
   }, []);
 
-
   const onConnect = () => {
     void metaMask.activate().catch(() => {
       console.debug('Failed to connect eagerly to metamask')
@@ -22,6 +21,11 @@ export const EthWallet = () => {
   };
 
   return (
-    <span>ETH: { ethWallet.address ? ethWallet.address : <Button onClick={onConnect}>Connect</Button>}</span>
+    <span>
+      {
+        ethWallet.address ? ethWallet.address.substr(0, 4) + "..." + ethWallet.address.substr(-4) :
+        <Button variant="light" compact onClick={onConnect}>Connect</Button>
+      }
+    </span>
   )
 }

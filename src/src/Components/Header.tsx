@@ -1,4 +1,4 @@
-import { createStyles, Header, Container, Group, Burger, Paper, Transition, Anchor, useMantineColorScheme, ActionIcon } from '@mantine/core';
+import { createStyles, Header, Container, Group, Grid, Burger, Paper, Transition, Anchor, useMantineColorScheme, ActionIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Logo } from './Logo';
 import { ThemeIcon } from '@mantine/core';
@@ -31,9 +31,6 @@ const useStyles = createStyles((theme) => ({
   },
 
   header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     height: '100%',
   },
 
@@ -87,22 +84,23 @@ export function HeaderResponsive({links }: HeaderResponsiveProps) {
   const { classes } = useStyles();
 
   const items = links.map((link) => (
-    <span key={link.link}>
-      <Anchor size="md" component={Link} to={link.link}>{link.label}</Anchor>&nbsp;|&nbsp;
-    </span>
+    <Grid.Col key={link.link} span={3}>
+      <Anchor size="md" component={Link} to={link.link}>{link.label}</Anchor>
+    </Grid.Col>
   ));
 
   return (
     <Header height={HEADER_HEIGHT} style={{backgroundColor: "unset"}} className={classes.root}>
-      <Container className={classes.header}>
-        <ThemeIcon>
+      <Grid justify="center" align="center" className={classes.header}>
+        {/* <ThemeIcon>
           <Logo />
-        </ThemeIcon>
-        <Group spacing={5} className={classes.links}>
-          {items}
-        </Group>
-
-        <Burger opened={opened} onClick={toggle} className={classes.burger} size="sm" />
+        </ThemeIcon> */}
+        <Grid.Col span={3}>
+          <Grid justify="center" align="center" className={classes.links}>
+            {items}
+          </Grid>
+        </Grid.Col>
+        {/* <Burger opened={opened} onClick={toggle} className={classes.burger} size="sm" />
 
         <Transition transition="pop-top-right" duration={200} mounted={opened}>
           {(styles) => (
@@ -111,14 +109,15 @@ export function HeaderResponsive({links }: HeaderResponsiveProps) {
             </Paper>
           )}
         </Transition>
+        */}
 
-        <WalletWrapper />
-
-        <ActionIcon variant="default" onClick={() => toggleColorScheme()} size={30}>
-          {colorScheme === 'dark' ? <IconSun size={16} /> : <IconMoonStars size={16} />}
-        </ActionIcon>
-
-      </Container>
+        <Grid.Col span={3}>
+          <WalletWrapper />
+          <ActionIcon variant="default" onClick={() => toggleColorScheme()} size={30}>
+            {colorScheme === 'dark' ? <IconSun size={16} /> : <IconMoonStars size={16} />}
+          </ActionIcon>
+        </Grid.Col>
+      </Grid>
     </Header>
   );
 }
