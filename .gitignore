@@ -10,3 +10,4 @@ react/*
 aeproject/docker
 *.wallet
 third_party/
+k8s/

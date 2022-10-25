@@ -42,7 +42,7 @@
     "web3": "^1.8.0"
   },
   "scripts": {
-    "deploy": "react-scripts build && aws s3 sync build/ s3://nuclearswap-react-origin --delete && aws cloudfront create-invalidation --distribution-id EFZQDY50WK8DF --paths '/index.html' && rm -rf build/",
+    "deploy": "react-scripts build && aws s3 sync build/ s3://aerenity-react-origin --delete && aws cloudfront create-invalidation --distribution-id E8KNCQF0VHP3Y --paths '/index.html' && rm -rf build/",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",

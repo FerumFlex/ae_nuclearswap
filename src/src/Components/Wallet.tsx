@@ -1,13 +1,12 @@
 import React, { useEffect } from 'react';
 import { Button } from '@mantine/core';
 import { metaMask } from '../connectors/metaMask';
-import { AeWalletContext, EthWalletContext } from '../store/Contexts';
+import { useStore } from '../store';
 import { observer } from "mobx-react-lite"
 
 
 export const Wallet = observer(() => {
-  let aeWallet = React.useContext(AeWalletContext);
-  let ethWallet = React.useContext(EthWalletContext);
+  const {aeWallet, ethWallet} = useStore()
 
   // attempt to connect eagerly on mount
   useEffect(() => {

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { createStyles, Header, Container, Group, Burger, Paper, Transition, Anchor } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Logo } from './Logo';
@@ -83,8 +82,7 @@ interface HeaderResponsiveProps {
 
 export function HeaderResponsive({links }: HeaderResponsiveProps) {
   const [opened, { toggle, close }] = useDisclosure(false);
-  const [active, setActive] = useState(links.length ? links[0].link : "");
-  const { classes, cx } = useStyles();
+  const { classes } = useStyles();
 
   const items = links.map((link) => (
     <span key={link.link}>

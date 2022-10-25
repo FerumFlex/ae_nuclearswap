@@ -6,6 +6,7 @@ import reportWebVitals from './reportWebVitals';
 import { MantineThemeOverride, MantineProvider } from '@mantine/core';
 import { BrowserRouter } from "react-router-dom";
 import { NotificationsProvider } from '@mantine/notifications';
+import store, { StoreContext } from './store';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -18,13 +19,15 @@ const myTheme: MantineThemeOverride = {
 
 root.render(
   <React.StrictMode>
-    <NotificationsProvider position="top-right">
-      <MantineProvider theme={myTheme} withGlobalStyles withNormalizeCSS>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </MantineProvider>
-    </NotificationsProvider>
+    <StoreContext.Provider value={store}>
+      <NotificationsProvider position="top-right">
+        <MantineProvider theme={myTheme} withGlobalStyles withNormalizeCSS>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </MantineProvider>
+      </NotificationsProvider>
+    </StoreContext.Provider>
   </React.StrictMode>
 );
 

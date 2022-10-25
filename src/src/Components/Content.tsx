@@ -4,7 +4,7 @@ import { IconExchange, IconCheck } from '@tabler/icons';
 import aeToken from '../contracts/ae_token.json';
 import aeHtlc from '../contracts/ae_htlc.json';
 import ethHtlc from '../contracts/HTLC_ERC20.json';
-import { AeWalletContext, EthWalletContext, ContractsContext } from '../store/Contexts';
+import { useStore } from '../store';
 import { observer } from "mobx-react-lite";
 import { showNotification } from '@mantine/notifications';
 import { hooks } from '../connectors/metaMask';
@@ -19,11 +19,11 @@ var sha256 = require('js-sha256');
 const networks = [
   {
     value: "aethertiny_test",
-    label: "AE Test",
+    label: "AE Testnet",
   },
   {
     value: "ethereum_test",
-    label: "Ethereum Test",
+    label: "Ethereum (goerli)",
   }
 ];
 
@@ -54,9 +54,7 @@ const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 
 export const Content = observer( () => {
-  const aeWallet = React.useContext(AeWalletContext);
-  const ethWallet = React.useContext(EthWalletContext);
-  const contracts = React.useContext(ContractsContext);
+  const {aeWallet, ethWallet, contracts } = useStore();
   const accounts = useAccounts();
   const [fromNetwork, setfromNetwork] = useState<string>(networks[0].value);
   const [toNetwork, settoNetwork] = useState<string>(networks[1].value);
@@ -155,7 +153,7 @@ export const Content = observer( () => {
             title: 'Error',
             message: 'Can not finish exchange',
           });
-          return;
+          break;
         }
       }
 

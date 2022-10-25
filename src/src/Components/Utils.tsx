@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { Anchor, Stack, Paper, Button } from "@mantine/core"
 import { showNotification } from '@mantine/notifications';
 import aeToken from '../contracts/ae_token.json';
-import { AeWalletContext } from '../store/Contexts';
+import { useStore } from '../store';
 
 
 export function Utils() {
-  const aeWallet = React.useContext(AeWalletContext);
+  const {aeWallet} = useStore();
   const [aeFaucetLoading, setAeFaucetLoading] = useState(false);
   const [aeFauceUsdttLoading, setAeFaucetUsdtLoading] = useState(false);
   const [ethFauceUsdttLoading, setEthFauceUsdttLoading] = useState(false);
