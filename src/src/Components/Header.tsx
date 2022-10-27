@@ -2,11 +2,12 @@ import { createStyles, Header, Container, Group, Grid, Burger, Paper, Transition
 import { useDisclosure } from '@mantine/hooks';
 import { Logo } from './Logo';
 import { ThemeIcon } from '@mantine/core';
-import { WalletWrapper } from './WalletWrapper';
 import { Link } from 'react-router-dom';
 import { IconSun, IconMoonStars } from '@tabler/icons';
+import { AeWallet } from './AeWallet';
+import { EthWallet } from './EthWallet';
 
-const HEADER_HEIGHT = 60;
+const HEADER_HEIGHT = 80;
 
 const useStyles = createStyles((theme) => ({
   root: {
@@ -72,6 +73,9 @@ const useStyles = createStyles((theme) => ({
       color: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).color,
     },
   },
+  logo: {
+    margin: "1rem"
+  }
 }));
 
 interface HeaderResponsiveProps {
@@ -84,23 +88,29 @@ export function HeaderResponsive({links }: HeaderResponsiveProps) {
   const { classes } = useStyles();
 
   const items = links.map((link) => (
-    <Grid.Col key={link.link} span={3}>
-      <Anchor size="md" component={Link} to={link.link}>{link.label}</Anchor>
+    <Grid.Col key={link.link} span={1}>
+      <Anchor key={link.link} size="md" className={classes.link} component={Link} to={link.link}>{link.label}</Anchor>
     </Grid.Col>
   ));
 
   return (
     <Header height={HEADER_HEIGHT} style={{backgroundColor: "unset"}} className={classes.root}>
       <Grid justify="center" align="center" className={classes.header}>
-        {/* <ThemeIcon>
-          <Logo />
-        </ThemeIcon> */}
-        <Grid.Col span={3}>
+        <Grid.Col span={1}>
+          <ThemeIcon className={classes.logo}>
+            <Logo />
+          </ThemeIcon>
+        </Grid.Col>
+        <Grid.Col span={2}>
+          &nbsp;
+        </Grid.Col>
+        <Grid.Col span={6}>
           <Grid justify="center" align="center" className={classes.links}>
             {items}
           </Grid>
         </Grid.Col>
-        {/* <Burger opened={opened} onClick={toggle} className={classes.burger} size="sm" />
+
+        <Burger opened={opened} onClick={toggle} className={classes.burger} size="sm" />
 
         <Transition transition="pop-top-right" duration={200} mounted={opened}>
           {(styles) => (
@@ -109,13 +119,21 @@ export function HeaderResponsive({links }: HeaderResponsiveProps) {
             </Paper>
           )}
         </Transition>
-        */}
 
         <Grid.Col span={3}>
-          <WalletWrapper />
-          <ActionIcon variant="default" onClick={() => toggleColorScheme()} size={30}>
-            {colorScheme === 'dark' ? <IconSun size={16} /> : <IconMoonStars size={16} />}
-          </ActionIcon>
+          <Grid>
+            <Grid.Col span={4}>
+              <AeWallet />
+            </Grid.Col>
+            <Grid.Col span={4}>
+              <EthWallet />
+            </Grid.Col>
+            <Grid.Col span={4}>
+              <ActionIcon variant="default" onClick={() => toggleColorScheme()} size={30}>
+                {colorScheme === 'dark' ? <IconSun size={16} /> : <IconMoonStars size={16} />}
+              </ActionIcon>
+            </Grid.Col>
+          </Grid>
         </Grid.Col>
       </Grid>
     </Header>

@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
 
-import { Button } from '@mantine/core';
+import { Button, Badge } from '@mantine/core';
 import { metaMask } from '../connectors/metaMask';
 import { useStore } from '../store';
+import { observer } from 'mobx-react-lite';
 
 
-export const EthWallet = () => {
+export const EthWallet = observer(() => {
   const {ethWallet} = useStore();
 
   useEffect(() => {
@@ -23,9 +24,10 @@ export const EthWallet = () => {
   return (
     <span>
       {
-        ethWallet.address ? ethWallet.address.substr(0, 4) + "..." + ethWallet.address.substr(-4) :
+        ethWallet.address ?
+        <Badge>ETH - {ethWallet.address.substr(0, 4) + "..." + ethWallet.address.substr(-4)}</Badge> :
         <Button variant="light" compact onClick={onConnect}>Connect</Button>
       }
     </span>
   )
-}
+})
