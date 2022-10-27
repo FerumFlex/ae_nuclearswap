@@ -1,4 +1,4 @@
-import { createStyles, Header, Container, Group, Grid, Burger, Paper, Transition, Anchor, useMantineColorScheme, ActionIcon } from '@mantine/core';
+import { createStyles, Header, Grid, Burger, Paper, Transition, Anchor, useMantineColorScheme, ActionIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Logo } from './Logo';
 import { ThemeIcon } from '@mantine/core';

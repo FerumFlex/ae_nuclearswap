@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, Paper, Stack, Select, Group, Center, NumberInput, Button, Timeline } from '@mantine/core';
+import { createStyles, Text, Paper, Stack, Select, Group, Center, NumberInput, Button, Timeline } from '@mantine/core';
 import { IconExchange, IconCheck } from '@tabler/icons';
 import aeToken from '../contracts/ae_token.json';
 import aeHtlc from '../contracts/ae_htlc.json';
@@ -8,6 +8,8 @@ import { useStore } from '../store';
 import { observer } from "mobx-react-lite";
 import { showNotification } from '@mantine/notifications';
 import { hooks } from '../connectors/metaMask';
+import { networks, bot_addr } from '../utils/Config';
+import { makeid, delay, hexdump } from '../utils/utils';
 
 const { useChainId, useAccounts, useIsActivating, useIsActive, useProvider, useENSNames } = hooks
 
@@ -16,42 +18,12 @@ const Web3 = require('web3');
 
 var sha256 = require('js-sha256');
 
-const networks = [
-  {
-    value: "aethertiny_test",
-    label: "AE Testnet",
-  },
-  {
-    value: "ethereum_test",
-    label: "Ethereum (goerli)",
+
+const useStyles = createStyles((theme) => ({
+  exchangeButton: {
+    cursor: 'pointer'
   }
-];
-
-const bot_addr = "ak_4z2k6qMcDuaTkcd2CvrRWyZe8xFQ1RntyWKbDf6nH19PSdwxm";
-
-
-function pad(n: string, width: number, z = '0') {
-  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
-}
-
-function hexdump(buf: ArrayBuffer) {
-  let view = new Uint8Array(buf);
-  let hex = Array.from(view).map(v => pad(v.toString(16), 2));
-  return hex.join(" ");
-}
-
-function makeid(length : number) {
-  var result           = '';
-  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  var charactersLength = characters.length;
-  for ( var i = 0; i < length; i++ ) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
- }
- return result;
-}
-
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-
+}));
 
 export const Content = observer( () => {
   const {aeWallet, ethWallet, contracts } = useStore();
@@ -61,6 +33,7 @@ export const Content = observer( () => {
   const [isLoading, setIsLoading] = useState(false);
   const [fromValue, setFromValue] = useState(0);
   const [currentAction, setCurrentAction] = useState<number | null>(null);
+  const { classes } = useStyles();
 
   const doExchange = async () => {
     if (aeWallet.aeSdk === null) {
@@ -168,6 +141,11 @@ export const Content = observer( () => {
     setFromValue(v);
   };
 
+  const onExchange = () => {
+    setfromNetwork(toNetwork);
+    settoNetwork(fromNetwork);
+  };
+
   return (
     <Stack align="center" justify="center" style={{backgroundColor: "unset", height: "100%"}}>
       <Paper withBorder radius="md" shadow="lg" p="md" style={{width: "500px", padding: "20px"}}>
@@ -175,7 +153,7 @@ export const Content = observer( () => {
           <Text size={"sm"}><strong>From:</strong></Text>
           <Select
             radius={"lg"}
-            data={[networks[0]]}
+            data={networks}
             value={fromNetwork}
           />
         </Group>
@@ -192,14 +170,14 @@ export const Content = observer( () => {
         </Paper>
 
         <Center style={{margin: "15px"}}>
-          <IconExchange size={48} strokeWidth={2} />
+          <IconExchange onClick={onExchange} size={48} className={classes.exchangeButton} strokeWidth={2} />
         </Center>
 
         <Group m="xs">
           <Text size={"sm"}><strong>To:</strong></Text>
           <Select
             radius={"lg"}
-            data={[networks[1]]}
+            data={networks}
             value={toNetwork}
           />
         </Group>
