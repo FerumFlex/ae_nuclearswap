@@ -23,7 +23,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * defaults to enabling the original sender of funds to withdraw a refund.
  */
 contract HTLC_ERC20 {
-
     struct LockContract {
         address token;
         bytes32 secret_hash;
@@ -36,9 +35,11 @@ contract HTLC_ERC20 {
         string preimage;
     }
 
-    mapping (bytes32 => LockContract) locked_contracts;
+    mapping(bytes32 => LockContract) locked_contracts;
+    mapping(address => bytes32[]) recipient_pendings;
+    mapping(address => uint256) token_balances;
 
-    event log_fund (
+    event log_fund(
         bytes32 indexed locked_contract_id,
         address token,
         bytes32 secret_hash,
@@ -47,41 +48,78 @@ contract HTLC_ERC20 {
         uint256 endtime,
         uint256 amount
     );
-    event log_withdraw (
-        bytes32 indexed locked_contract_id
-    );
-    event log_refund (
-        bytes32 indexed locked_contract_id
-    );
+    event log_withdraw(bytes32 indexed locked_contract_id);
+    event log_refund(bytes32 indexed locked_contract_id);
 
-    modifier is_token_transferable (address token, address sender, uint256 amount) {
+    modifier is_token_transferable(
+        address token,
+        address sender,
+        uint256 amount
+    ) {
         require(amount > 0, "token amount must be > 0");
-        require(IERC20(token).allowance(sender, address(this)) >= amount, "token allowance must be >= amount");
+        require(
+            IERC20(token).allowance(sender, address(this)) >= amount,
+            "token allowance must be >= amount"
+        );
         _;
     }
-    modifier future_endtime (uint256 endtime) {
-        require(endtime > block.timestamp, "endtime time must be in the future");
+    modifier future_endtime(uint256 endtime) {
+        require(
+            endtime > block.timestamp,
+            "endtime time must be in the future"
+        );
         _;
     }
-    modifier is_locked_contract_exist (bytes32 locked_contract_id) {
-        require(have_locked_contract(locked_contract_id), "locked_contract_id does not exist");
+    modifier is_locked_contract_exist(bytes32 locked_contract_id) {
+        require(
+            have_locked_contract(locked_contract_id),
+            "locked_contract_id does not exist"
+        );
         _;
     }
-    modifier check_secret_hash_matches (bytes32 locked_contract_id, string memory preimage) {
-        require(locked_contracts[locked_contract_id].secret_hash == sha256(abi.encodePacked(preimage)), "secret hash hash does not match");
+    modifier check_secret_hash_matches(
+        bytes32 locked_contract_id,
+        string memory preimage
+    ) {
+        require(
+            locked_contracts[locked_contract_id].secret_hash ==
+                sha256(abi.encodePacked(preimage)),
+            "secret hash hash does not match"
+        );
         _;
     }
-    modifier withdrawable (bytes32 locked_contract_id) {
-        require(locked_contracts[locked_contract_id].recipient == msg.sender, "withdrawable: not recipient");
-        require(locked_contracts[locked_contract_id].withdrawn == false, "withdrawable: already withdrawn");
-        require(locked_contracts[locked_contract_id].refunded == false, "withdrawable: already refunded");
+    modifier withdrawable(bytes32 locked_contract_id) {
+        require(
+            locked_contracts[locked_contract_id].recipient == msg.sender,
+            "withdrawable: not recipient"
+        );
+        require(
+            locked_contracts[locked_contract_id].withdrawn == false,
+            "withdrawable: already withdrawn"
+        );
+        require(
+            locked_contracts[locked_contract_id].refunded == false,
+            "withdrawable: already refunded"
+        );
         _;
     }
-    modifier refundable (bytes32 locked_contract_id) {
-        require(locked_contracts[locked_contract_id].sender == msg.sender, "refundable: not sender");
-        require(locked_contracts[locked_contract_id].refunded == false, "refundable: already refunded");
-        require(locked_contracts[locked_contract_id].withdrawn == false, "refundable: already withdrawn");
-        require(locked_contracts[locked_contract_id].endtime <= block.timestamp, "refundable: endtime not yet passed");
+    modifier refundable(bytes32 locked_contract_id) {
+        require(
+            locked_contracts[locked_contract_id].sender == msg.sender,
+            "refundable: not sender"
+        );
+        require(
+            locked_contracts[locked_contract_id].refunded == false,
+            "refundable: already refunded"
+        );
+        require(
+            locked_contracts[locked_contract_id].withdrawn == false,
+            "refundable: already withdrawn"
+        );
+        require(
+            locked_contracts[locked_contract_id].endtime <= block.timestamp,
+            "refundable: endtime not yet passed"
+        );
         _;
     }
 
@@ -97,15 +135,34 @@ contract HTLC_ERC20 {
      *
      * @return locked_contract_id of the new HTLC.
      */
-    function fund (
-        address token, bytes32 secret_hash, address payable recipient, address payable sender, uint256 endtime, uint256 amount
-    ) external is_token_transferable (token, msg.sender, amount) future_endtime (endtime) returns (bytes32 locked_contract_id) {
+    function fund(
+        address token,
+        bytes32 secret_hash,
+        address payable recipient,
+        address payable sender,
+        uint256 endtime,
+        uint256 amount
+    )
+        external
+        is_token_transferable(token, msg.sender, amount)
+        future_endtime(endtime)
+        returns (bytes32 locked_contract_id)
+    {
+        require(
+            msg.sender == sender,
+            "msg.sender must be same with sender address"
+        );
 
-        require(msg.sender == sender, "msg.sender must be same with sender address");
-
-        locked_contract_id = sha256(abi.encodePacked(
-            token, secret_hash, recipient, sender, endtime, amount
-        ));
+        locked_contract_id = sha256(
+            abi.encodePacked(
+                token,
+                secret_hash,
+                recipient,
+                sender,
+                endtime,
+                amount
+            )
+        );
 
         if (have_locked_contract(locked_contract_id))
             revert("this locked contract already exists");
@@ -114,11 +171,26 @@ contract HTLC_ERC20 {
             revert("transferFrom sender to this failed");
 
         locked_contracts[locked_contract_id] = LockContract(
-            token, secret_hash, recipient, sender, endtime, amount, false, false, ""
+            token,
+            secret_hash,
+            recipient,
+            sender,
+            endtime,
+            amount,
+            false,
+            false,
+            ""
         );
+        recipient_pendings[sender].push(locked_contract_id);
 
-        emit log_fund (
-            locked_contract_id, token, secret_hash, recipient, sender, endtime, amount
+        emit log_fund(
+            locked_contract_id,
+            token,
+            secret_hash,
+            recipient,
+            sender,
+            endtime,
+            amount
         );
         return locked_contract_id;
     }
@@ -131,19 +203,24 @@ contract HTLC_ERC20 {
      *
      * @return bool true on success or false on failure.
      */
-    function withdraw (bytes32 locked_contract_id, string memory preimage) external is_locked_contract_exist (locked_contract_id) check_secret_hash_matches (locked_contract_id, preimage) withdrawable (locked_contract_id) returns (bool) {
-
-        LockContract storage locked_contract = locked_contracts[locked_contract_id];
+    function withdraw(bytes32 locked_contract_id, string memory preimage)
+        external
+        is_locked_contract_exist(locked_contract_id)
+        check_secret_hash_matches(locked_contract_id, preimage)
+        withdrawable(locked_contract_id)
+        returns (bool)
+    {
+        LockContract storage locked_contract = locked_contracts[
+            locked_contract_id
+        ];
 
         locked_contract.preimage = preimage;
         locked_contract.withdrawn = true;
-        IERC20(locked_contract.token).transfer(
-            locked_contract.recipient, locked_contract.amount
-        );
 
-        emit log_withdraw(
-            locked_contract_id
-        );
+        token_balances[locked_contract.token] += locked_contract.amount;
+        remove_from_pendings(locked_contract_id, locked_contract.sender);
+
+        emit log_withdraw(locked_contract_id);
         return true;
     }
 
@@ -154,18 +231,24 @@ contract HTLC_ERC20 {
      *
      * @return bool true on success or false on failure.
      */
-    function refund (bytes32 locked_contract_id) external is_locked_contract_exist (locked_contract_id) refundable (locked_contract_id) returns (bool) {
-
-        LockContract storage locked_contract = locked_contracts[locked_contract_id];
+    function refund(bytes32 locked_contract_id)
+        external
+        is_locked_contract_exist(locked_contract_id)
+        refundable(locked_contract_id)
+        returns (bool)
+    {
+        LockContract storage locked_contract = locked_contracts[
+            locked_contract_id
+        ];
 
         locked_contract.refunded = true;
         IERC20(locked_contract.token).transfer(
-            locked_contract.sender, locked_contract.amount
+            locked_contract.sender,
+            locked_contract.amount
         );
+        remove_from_pendings(locked_contract_id, locked_contract.sender);
 
-        emit log_refund(
-            locked_contract_id
-        );
+        emit log_refund(locked_contract_id);
         return true;
     }
 
@@ -176,13 +259,39 @@ contract HTLC_ERC20 {
      *
      * @return id token secret_hash recipient sender endtime amount withdrawn refunded preimage locked HTLC IERC20 contract data's.
      */
-    function get_locked_contract (bytes32 locked_contract_id) public view returns (
-        bytes32 id, address token, bytes32 secret_hash, address recipient, address sender, uint256 endtime, uint256 amount, bool withdrawn, bool refunded, string memory preimage
-    ) {
+    function get_locked_contract(bytes32 locked_contract_id)
+        public
+        view
+        returns (
+            bytes32 id,
+            address token,
+            bytes32 secret_hash,
+            address recipient,
+            address sender,
+            uint256 endtime,
+            uint256 amount,
+            bool withdrawn,
+            bool refunded,
+            string memory preimage
+        )
+    {
         if (have_locked_contract(locked_contract_id) == false)
-            return (0, address(0), 0, address(0), address(0), 0, 0, false, false, "");
+            return (
+                0,
+                address(0),
+                0,
+                address(0),
+                address(0),
+                0,
+                0,
+                false,
+                false,
+                ""
+            );
 
-        LockContract storage locked_contract = locked_contracts[locked_contract_id];
+        LockContract storage locked_contract = locked_contracts[
+            locked_contract_id
+        ];
 
         return (
             locked_contract_id,
@@ -205,7 +314,78 @@ contract HTLC_ERC20 {
      *
      * @return exists boolean true or false.
      */
-    function have_locked_contract(bytes32 locked_contract_id) internal view returns (bool exists){
+    function have_locked_contract(bytes32 locked_contract_id)
+        internal
+        view
+        returns (bool exists)
+    {
         exists = (locked_contracts[locked_contract_id].sender != address(0));
+    }
+
+    function remove_from_pendings(bytes32 locked_contract_id, address sender)
+        internal
+        returns (bool status)
+    {
+        if (recipient_pendings[sender].length == 0) {
+            revert("Can not delete from pendings");
+        }
+
+        uint256 index = 0;
+        bool found = false;
+        for (uint256 i = 0; i < recipient_pendings[sender].length; i++) {
+            if (recipient_pendings[sender][i] == locked_contract_id) {
+                index = i;
+                found = true;
+                break;
+            }
+        }
+        if (found == false) {
+            revert("Can not find in pendings");
+        }
+
+        for (
+            uint256 i = index;
+            i < recipient_pendings[sender].length - 1;
+            i++
+        ) {
+            recipient_pendings[sender][i] = recipient_pendings[sender][
+                i + 1
+            ];
+        }
+        recipient_pendings[sender].pop();
+        return true;
+    }
+
+    /**
+     * @dev return pending tranfers for user
+     *
+     * @param sender of user to return list of locked_contracts
+     *
+     * @return pendings list of locked_contracts
+     */
+    function get_pending_contracts(address sender)
+        external
+        view
+        returns (bytes32[] memory pendings)
+    {
+        bytes32[] memory result = new bytes32[](
+            recipient_pendings[sender].length
+        );
+
+        for (uint256 i = 0; i < recipient_pendings[sender].length; i++) {
+            result[i] = recipient_pendings[sender][i];
+        }
+        return result;
+    }
+
+    /**
+     * @dev return current token balances located on smartcontract
+     *
+     * @param token address of token
+     *
+     * @return balance return amount of tokens located on smartcontract
+     */
+    function get_token_balance(address token) external view returns(uint256 balance) {
+        return token_balances[token];
     }
 }

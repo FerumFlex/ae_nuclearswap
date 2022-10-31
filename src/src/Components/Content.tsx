@@ -7,11 +7,9 @@ import ethHtlc from '../contracts/HTLC_ERC20.json';
 import { useStore } from '../store';
 import { observer } from "mobx-react-lite";
 import { showNotification } from '@mantine/notifications';
-import { hooks } from '../connectors/metaMask';
 import { networks, bot_addr } from '../utils/Config';
 import { makeid, delay, hexdump } from '../utils/utils';
-
-const { useChainId, useAccounts, useIsActivating, useIsActive, useProvider, useENSNames } = hooks
+import { useEthers } from '@usedapp/core'
 
 const Buffer = require('buffer').Buffer;
 const Web3 = require('web3');
@@ -26,8 +24,8 @@ const useStyles = createStyles((theme) => ({
 }));
 
 export const Content = observer( () => {
+  const { account } = useEthers();
   const {aeWallet, ethWallet, contracts } = useStore();
-  const accounts = useAccounts();
   const [fromNetwork, setfromNetwork] = useState<string>(networks[0].value);
   const [toNetwork, settoNetwork] = useState<string>(networks[1].value);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,7 +43,7 @@ export const Content = observer( () => {
       return;
     };
 
-    if (accounts === undefined) {
+    if (account === undefined) {
       showNotification({
         color: 'red',
         title: 'Error',
@@ -107,7 +105,7 @@ export const Content = observer( () => {
           if (event) {
             setCurrentAction(3);
             const new_contract_id = event.returnValues.locked_contract_id.substr(2);
-            await contract.methods.withdraw(Buffer.from(new_contract_id, "hex"), password).send({ from: accounts[0] });
+            await contract.methods.withdraw(Buffer.from(new_contract_id, "hex"), password).send({ from: account });
 
             showNotification({
               color: 'green',

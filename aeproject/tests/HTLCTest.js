@@ -1,5 +1,5 @@
 const { assert } = require('chai');
-const { networks, utils, wallets } = require('@aeternity/aeproject');
+const { utils, wallets } = require('@aeternity/aeproject');
 var crypto = require('crypto');
 
 const HTLC_SOURCE = './contracts/HTLC.aes';

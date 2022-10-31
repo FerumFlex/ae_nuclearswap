@@ -6,3 +6,10 @@ deploy-goerli:
 
 networks:
 	truffle networks
+
+.PHONY: test
+test:
+	truffle test
+
+compile:
+	truffle compile

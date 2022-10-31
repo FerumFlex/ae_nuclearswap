@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
 import './App.css';
 import { AppShell } from '@mantine/core';
 import { HeaderResponsive } from './Components/Header';
@@ -12,19 +12,12 @@ import {
 } from "react-router-dom";
 import { observer } from "mobx-react-lite"
 import { useStore } from './store';
-import { hooks } from './connectors/metaMask';
-import { MantineThemeOverride, MantineProvider, ColorSchemeProvider, ColorScheme } from '@mantine/core';
+import { MantineProvider, ColorSchemeProvider, ColorScheme } from '@mantine/core';
+import { useEthers } from '@usedapp/core'
 
-const { useChainId, useAccounts, useIsActivating, useIsActive, useProvider, useENSNames } = hooks
-
-
-const myTheme: MantineThemeOverride = {
-  colorScheme: 'dark',
-  defaultRadius: 0,
-};
 
 const App = observer(() => {
-  const accounts = useAccounts();
+  const { account } = useEthers()
   const {aeWallet, ethWallet} = useStore()
   const [colorScheme, setColorScheme] = useState<ColorScheme>('dark');
   const toggleColorScheme = (value?: ColorScheme) =>
@@ -37,9 +30,8 @@ const App = observer(() => {
   }, [aeWallet]);
 
   useEffect(() => {
-    let address = accounts?.length ? accounts[0] : "";
-    ethWallet.setAddress(address);
-  }, [accounts, ethWallet])
+    ethWallet.setAddress(account ? account : "");
+  }, [account, ethWallet])
 
   return (
     <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>

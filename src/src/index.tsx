@@ -6,6 +6,9 @@ import reportWebVitals from './reportWebVitals';
 import { BrowserRouter } from "react-router-dom";
 import { NotificationsProvider } from '@mantine/notifications';
 import store, { StoreContext } from './store';
+import { DAppProvider } from '@usedapp/core'
+import { config } from './utils/Config';
+
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -14,11 +17,13 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <StoreContext.Provider value={store}>
-      <NotificationsProvider position="top-right">
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </NotificationsProvider>
+      <DAppProvider config={config}>
+        <NotificationsProvider position="top-right">
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </NotificationsProvider>
+      </DAppProvider>
     </StoreContext.Provider>
   </React.StrictMode>
 );

@@ -1,24 +1,21 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { Button, Badge } from '@mantine/core';
-import { metaMask } from '../connectors/metaMask';
 import { useStore } from '../store';
 import { observer } from 'mobx-react-lite';
+import { useEthers } from '@usedapp/core'
 
 
 export const EthWallet = observer(() => {
   const {ethWallet} = useStore();
+  const { activateBrowserWallet } = useEthers();
 
   useEffect(() => {
-    void metaMask.connectEagerly().catch(() => {
-      console.debug('Failed to connect eagerly to metamask')
-    })
-  }, []);
+    activateBrowserWallet();
+  }, [activateBrowserWallet]);
 
   const onConnect = () => {
-    void metaMask.activate().catch(() => {
-      console.debug('Failed to connect eagerly to metamask')
-    })
+    activateBrowserWallet();
   };
 
   return (
