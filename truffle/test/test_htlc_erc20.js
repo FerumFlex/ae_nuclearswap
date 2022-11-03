@@ -32,7 +32,7 @@ contract("HTLC_ERC20", (accounts) => {
     let result = await htlcErc20Instance.fund(usdtInstance.address, secret_hash, accounts[1], accounts[0], unix, amount);
     const locked_contract_id = result.logs[0].args.locked_contract_id;
 
-    result = await htlcErc20Instance.get_pending_contracts.call(accounts[0]);
+    result = await htlcErc20Instance.get_fund_contracts(accounts[0]);
 
     assert.equal(result.length, 1, "Only one pending contract");
     assert.equal(result[0], locked_contract_id, "Pending contract should match");
@@ -41,7 +41,7 @@ contract("HTLC_ERC20", (accounts) => {
     assert.equal(balanceNew.add(amount).toString(), balanceOriginal.toString(), "Balances should match");
 
     try {
-      result = await htlcErc20Instance.refund(locked_contract_id);
+      result = await htlcErc20Instance.fund_cancel(locked_contract_id);
       assert.equal("1", "0", "Should not get there");
     } catch (ex) {
       assert.equal(ex.reason, "refundable: endtime not yet passed")
@@ -60,13 +60,13 @@ contract("HTLC_ERC20", (accounts) => {
     assert.equal(contract.refunded, false, "Should match refunded");
     assert.equal(contract.preimage, "", "Preimage should be empty");
 
-    result = await htlcErc20Instance.refund(locked_contract_id);
+    result = await htlcErc20Instance.fund_cancel(locked_contract_id);
 
     contract = await htlcErc20Instance.get_locked_contract(locked_contract_id);
     assert.equal(contract.withdrawn, false, "Should match withdrawn");
     assert.equal(contract.refunded, true, "Should match refunded");
 
-    result = await htlcErc20Instance.get_pending_contracts.call(accounts[0]);
+    result = await htlcErc20Instance.get_fund_contracts(accounts[0]);
     assert.equal(result.length, 0, "None pending contract");
 
     balanceNew = await usdtInstance.balanceOf(accounts[0]);
@@ -95,24 +95,24 @@ contract("HTLC_ERC20_withdraw", (accounts) => {
     let result = await htlcErc20Instance.fund(usdtInstance.address, secret_hash, accounts[1], accounts[0], unix, amount);
     const locked_contract_id = result.logs[0].args.locked_contract_id;
 
-    result = await htlcErc20Instance.get_pending_contracts.call(accounts[0]);
+    result = await htlcErc20Instance.get_fund_contracts(accounts[0]);
 
     assert.equal(result.length, 1, "Only one pending contract");
     assert.equal(result[0], locked_contract_id, "Pending contract should match");
 
     try {
-      await htlcErc20Instance.withdraw(locked_contract_id, password);
+      await htlcErc20Instance.fund_confirm(locked_contract_id, password);
     } catch (ex) {
       assert.equal(ex.reason, "withdrawable: not recipient")
     }
 
-    await htlcErc20Instance.withdraw(locked_contract_id, password, {from: accounts[1]});
+    await htlcErc20Instance.fund_confirm(locked_contract_id, password, {from: accounts[1]});
 
     contract = await htlcErc20Instance.get_locked_contract(locked_contract_id);
     assert.equal(contract.withdrawn, true, "Should be true after withdraw");
     assert.equal(contract.refunded, false, "Should be false after widthdraw");
 
-    result = await htlcErc20Instance.get_pending_contracts.call(accounts[0]);
+    result = await htlcErc20Instance.get_fund_contracts(accounts[0]);
     assert.equal(result.length, 0, "None pending contract after withdraw");
 
     let balanceSecond = await usdtInstance.balanceOf(accounts[1]);
