@@ -1,11 +1,12 @@
+import { useState } from 'react';
 import { createStyles, Header, Grid, Burger, Paper, Transition, Anchor, useMantineColorScheme, ActionIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Logo } from './Logo';
-import { ThemeIcon } from '@mantine/core';
 import { Link } from 'react-router-dom';
 import { IconSun, IconMoonStars } from '@tabler/icons';
 import { AeWallet } from './AeWallet';
 import { EthWallet } from './EthWallet';
+import { useEffect } from 'react';
 
 const HEADER_HEIGHT = 80;
 
@@ -72,9 +73,6 @@ const useStyles = createStyles((theme) => ({
       backgroundColor: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).background,
       color: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).color,
     },
-  },
-  logo: {
-    margin: "1rem"
   }
 }));
 
@@ -85,11 +83,28 @@ interface HeaderResponsiveProps {
 export function HeaderResponsive({links }: HeaderResponsiveProps) {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const [opened, { toggle }] = useDisclosure(false);
-  const { classes } = useStyles();
+  const { classes, cx } = useStyles();
+  const [activeLink, setActiveLink] = useState(links[0].link);
+
+  useEffect(() => {
+    for(var index in links) {
+      let link = links[index];
+      if (window.location.pathname === link.link) {
+        setActiveLink(link.link);
+        break;
+      }
+    }
+  }, [links])
 
   const items = links.map((link) => (
     <Grid.Col key={link.link} span={1}>
-      <Anchor key={link.link} size="md" className={classes.link} component={Link} to={link.link}>{link.label}</Anchor>
+      <Anchor
+        key={link.link}
+        size="md"
+        className={cx(classes.link, { [classes.linkActive]: activeLink === link.link })}
+        onClick={() => setActiveLink(link.link)}
+        component={Link}
+        to={link.link}>{link.label}</Anchor>
     </Grid.Col>
   ));
 
@@ -97,9 +112,7 @@ export function HeaderResponsive({links }: HeaderResponsiveProps) {
     <Header height={HEADER_HEIGHT} style={{backgroundColor: "unset"}} className={classes.root}>
       <Grid justify="center" align="center" className={classes.header}>
         <Grid.Col span={1}>
-          <ThemeIcon className={classes.logo}>
-            <Logo />
-          </ThemeIcon>
+          <Logo />
         </Grid.Col>
         <Grid.Col span={2}>
           &nbsp;
