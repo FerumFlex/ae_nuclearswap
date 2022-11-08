@@ -44,6 +44,10 @@ const App = observer(() => {
               "label": "Swap"
             },
             {
+              "link": "/lending",
+              "label": "Lending"
+            },
+            {
               "link": "/utils",
               "label": "Utils"
             }

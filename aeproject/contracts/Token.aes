@@ -20,20 +20,22 @@
 
 @compiler >= 5
 
-include "Option.aes"
 include "String.aes"
+include "Frac.aes"
 
 /// @title - Fungible token with all the extensions - burn, mint, allowances
-contract FungibleTokenFull =
+contract Token =
 
   // This defines the state of type record encapsulating the contract's mutable state
   record state =
-    { owner        : address      // the smart contract's owner address
-    , total_supply : int          // total token supply
-    , balances     : balances     // balances for each account
-    , meta_info    : meta_info    // token meta info (name, symbol, decimals)
-    , allowances   : allowances   // owner of account approves the transfer of an amount to another account
-    , swapped      : map(address, int) }
+    { owner          : address      // the smart contract's owner address
+    , total_supply   : int          // total token supply
+    , balances       : balances     // balances for each account
+    , meta_info      : meta_info    // token meta info (name, symbol, decimals)
+    , allowances     : allowances   // owner of account approves the transfer of an amount to another account
+    , total_borrowed : int
+    , total_deposit  : int
+    , total_reserve  : int}
 
   // This is the meta-information record type
   record meta_info =
@@ -57,11 +59,9 @@ contract FungibleTokenFull =
     | Allowance(address, address, int)
     | Burn(address, int)
     | Mint(address, int)
-    | Swap(address, int)
-    | NewOwner(address)
 
   // List of supported extensions
-  entrypoint aex9_extensions() : list(string) = ["allowances", "mintable", "burnable", "swappable"]
+  entrypoint aex9_extensions() : list(string) = ["allowances", "mintable"]
 
   // Create a fungible token with
   // the following `name` `symbol` and `decimals`
@@ -74,13 +74,14 @@ contract FungibleTokenFull =
     // If the provided value for `decimals` is negative abort the execution
     require_non_negative_value(decimals)
 
-    let owner = Call.caller
-    { owner        = owner,
-      total_supply = 0,
-      balances     = {},
-      meta_info    = { name = name, symbol = symbol, decimals = decimals },
-      allowances   = {},
-      swapped      = {} }
+    { owner          = Call.caller,
+      total_supply   = 0,
+      total_borrowed = 0,
+      total_deposit  = 0,
+      total_reserve  = 0,
+      balances       = {},
+      meta_info      = { name = name, symbol = symbol, decimals = decimals },
+      allowances     = {}}
 
   // Get the token meta info
   entrypoint meta_info() : meta_info =
@@ -105,10 +106,6 @@ contract FungibleTokenFull =
   // Otherwise Some(int) is returned with the current balance
   entrypoint balance(account: address) : option(int) =
     Map.lookup(account, state.balances)
-
-  // Get all swapped tokens stored in state
-  entrypoint swapped() : map(address, int) =
-    state.swapped
 
   // Get the allowances state
   entrypoint allowances() : allowances =
@@ -159,11 +156,6 @@ contract FungibleTokenFull =
     // Fire Allowance event to include it in the transaction event log
     Chain.event(Allowance(Call.caller, for_account, value))
 
-  stateful entrypoint set_owner(new_owner: address) =
-    require_owner()
-    put(state{ owner = new_owner })
-    Chain.event(NewOwner(new_owner))
-
   // Allows to change the allowed spendable value for `for_account` with `value_change`
   stateful entrypoint change_allowance(for_account: address, value_change: int) =
     let allowance_accounts = { from_account =  Call.caller, for_account = for_account }
@@ -178,30 +170,28 @@ contract FungibleTokenFull =
   stateful entrypoint transfer(to_account: address, value: int) =
     internal_transfer(Call.caller, to_account, value)
 
-  // Destroys `value` tokens from `Call.caller`, reducing the total supply.
-  // `Burn` event with `Call.caller` address and `value`.
-  stateful entrypoint burn(value: int) =
-    require_balance(Call.caller, value)
-    require_non_negative_value(value)
-    put(state{ total_supply = state.total_supply - value, balances[Call.caller] @ b = b - value })
-    Chain.event(Burn(Call.caller, value))
-
   // Creates `value` tokens and assigns them to `account`, increasing the total supply.
   // Emits a `Mint` event with `account` and `value`.
-  stateful entrypoint mint(account: address, value: int) =
-    require_owner()
+  payable stateful entrypoint mint() =
+    let value = Call.value
+    let account = Call.caller
+
     require_non_negative_value(value)
-    put(state{ total_supply = state.total_supply + value, balances[account = 0] @ b = b + value })
+    let to_mint = Frac.floor(Frac.div(Frac.from_int(value), get_exchange_rate()))
+    put(state{ total_supply = state.total_supply + to_mint, total_deposit = state.total_deposit + value, balances[account = 0] @ b = b + to_mint })
     Chain.event(Mint(account, value))
 
-  stateful entrypoint swap() =
-    let balance = Map.lookup_default(Call.caller, state.balances, 0)
-    burn(balance)
-    put(state{ swapped[Call.caller] = balance })
-    Chain.event(Swap(Call.caller, balance))
+  stateful entrypoint borrow(value: int) =
+    require_non_negative_value(value)
 
-  stateful entrypoint check_swap(account: address) : int =
-    Map.lookup_default(account, state.swapped, 0)
+  stateful entrypoint get_exchange_rate() : Frac.frac =
+    if (state.total_supply == 0)
+      Frac.make_frac(1, 1)
+    else
+      Frac.make_frac(get_cash() + state.total_borrowed + state.total_reserve, state.total_supply)
+
+  stateful entrypoint get_cash() : int =
+    state.total_deposit + state.total_borrowed
 
   // INTERNAL FUNCTIONS
 

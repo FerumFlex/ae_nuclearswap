@@ -1,0 +1,77 @@
+// ISC License
+//
+// Copyright (c) 2017, aeternity developers
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+// REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+// AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+// INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+// LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
+// OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+// PERFORMANCE OF THIS SOFTWARE.
+
+
+// THIS IS NOT SECURITY AUDITED
+// DO NEVER USE THIS WITHOUT SECURITY AUDIT FIRST
+
+@compiler >= 5
+
+include "String.aes"
+include "Pair.aes"
+
+contract interface FungibleTokenInterface =
+  record meta_info =
+    { name : string
+    , symbol : string
+    , decimals : int }
+  record allowance_accounts = { from_account : address, for_account : address }
+
+  datatype event =
+    Transfer(address, address, int)
+    | Allowance(address, address, int)
+    | Burn(address, int)
+    | Mint(address, int)
+    | Swap(address, int)
+    | NewOwner(address)
+
+  entrypoint aex9_extensions : ()                                   => list(string)
+  entrypoint meta_info       : ()                                   => meta_info
+  entrypoint total_supply    : ()                                   => int
+  entrypoint owner           : ()                                   => address
+  entrypoint balances        : ()                                   => map(address, int)
+  entrypoint balance         : (address)                            => option(int)
+  entrypoint allowance       : (allowance_accounts)                 => option(int)
+  stateful entrypoint transfer_allowance : (address, address, int)  => unit
+  stateful entrypoint transfer           : (address, int)           => unit
+  stateful entrypoint mint               : (address, int)           => unit
+
+
+/// @title - Fungible token with all the extensions - burn, mint, allowances
+contract Gate =
+
+  // This is a type alias for the balances map
+  type usedSwaps = map(hash, bool)
+
+  // This defines the state of type record encapsulating the contract's mutable state
+  record state =
+    { usedSwaps           : usedSwaps }
+
+  entrypoint init() =
+    { usedSwaps           = {} }
+
+  stateful entrypoint claim(swapId: hash, fromToken: bytes(20), toToken: address, sender: bytes(20), recipient: address, amount: int, nonce: int, signature: bytes(65)) =
+    require(Map.lookup_default(swapId, state.usedSwaps, false) == false, "Swap should not be used")
+    let tokenContract : FungibleTokenInterface = Address.to_contract(toToken)
+    let p = Bytes.concat(fromToken, Crypto.sha256(Address.to_str(toToken)))
+    let p2 = Bytes.concat(p, sender)
+    let p3 = Bytes.concat(p2, Crypto.sha256(Address.to_str(recipient)))
+    let p4 = Bytes.concat(p3, Crypto.sha256(Int.to_str(amount)))
+    let p5 = Bytes.concat(p4, Crypto.sha256(Int.to_str(nonce)))
+    let correctSwapId = Crypto.sha256(p5)
+    require(correctSwapId == swapId, swapId)
+    tokenContract.mint(recipient, amount)
+    put(state{ usedSwaps[swapId] = true })
