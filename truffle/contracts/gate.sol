@@ -59,8 +59,6 @@ contract Gate is Ownable {
             )
         );
 
-        // bytes32 swapId = sha256(abi.encodePacked(toToken));
-
         if (haveSwap(swapId)) revert("this swap already exists");
 
         if (!IERC20(fromToken).transferFrom(_msgSender(), address(this), amount))
@@ -69,7 +67,6 @@ contract Gate is Ownable {
         swaps[swapId] = Swap(fromToken, toToken, _msgSender(), recipient, amount, nonce, "");
 
         emit FundEvent(swapId, fromToken, toToken, _msgSender(), recipient, amount, nonce);
-        // emit FundEvent(swapId, fromToken, Strings.toHexString(fromToken), _msgSender(), recipient, amount, nonce);
 
         return swapId;
     }
