@@ -11,6 +11,7 @@ contract("GATE", (accounts) => {
   const aeTokenAddress = "ak_2FYNeoVoxz2jCvaautM12HtuhXoRbA3ZtjfCtX98AaqpAK4rzM";
   const aeAddress = "ak_ZdF4zFqkaUjM5QqkefgvWS9PhRyyMFgdhMy9dgZFAqU9Ayp53";
   let nonce = 0;
+  const wait_time = 2000;
 
   beforeEach(async () => {
     gateInstance = await GATE.deployed();
@@ -22,13 +23,33 @@ contract("GATE", (accounts) => {
     await gateInstance.setOracle(accounts[1]);
   });
 
-  it("should allow gate oracle", async() => {
+  it("get oracle", async() => {
     const oracle = await gateInstance.getOracle();
     assert.equal(oracle, accounts[1]);
   });
 
+  it("fund -> refund", async() => {
+    const unix = Math.round((+new Date() + wait_time) / 1000);
+    let result = await gateInstance.fund(usdtInstance.address, aeTokenAddress, aeAddress, amount, ++nonce, unix);
+
+    // get swap id
+    let swapId = result.receipt.logs[0].args.swapId;
+
+    result = await gateInstance.fundCancel(swapId);
+    assert.notEqual(result.receipt.stack.indexOf("refundable: endtime not yet passed"), -1, "refundable: endtime not yet passed");
+
+    await utils.delay(wait_time);
+
+    // create some transaction to mine new block and update Chain.timestamp
+    await usdtInstance.transfer(accounts[1], amount);
+
+    result = await gateInstance.fundCancel(swapId);
+    assert.equal(result.receipt.status, true);
+  });
+
   it("fund -> sign account", async() => {
-    let result = await gateInstance.fund(usdtInstance.address, aeTokenAddress, aeAddress, amount, ++nonce);
+    const unix = Math.round((+new Date() + wait_time) / 1000);
+    let result = await gateInstance.fund(usdtInstance.address, aeTokenAddress, aeAddress, amount, ++nonce, unix);
 
     // get swap id
     let swapId = result.receipt.logs[0].args.swapId;
@@ -55,7 +76,8 @@ contract("GATE", (accounts) => {
   });
 
   it("fund -> wrong sign account", async() => {
-    let result = await gateInstance.fund(usdtInstance.address, aeTokenAddress, aeAddress, amount, ++nonce);
+    const unix = Math.round((+new Date() + wait_time) / 1000);
+    let result = await gateInstance.fund(usdtInstance.address, aeTokenAddress, aeAddress, amount, ++nonce, unix);
 
     let swapId = result.receipt.logs[0].args.swapId;
 

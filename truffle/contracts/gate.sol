@@ -16,6 +16,9 @@ contract Gate is Ownable {
         string recipient;
         uint256 amount;
         uint256 nonce;
+        uint256 endtime;
+        bool withdrawn;
+        bool refunded;
         bytes signature;
     }
 
@@ -28,6 +31,9 @@ contract Gate is Ownable {
         uint256 amount,
         uint256 nonce
     );
+    event FundCancelEvent(
+        bytes32 indexed swapId
+    );
 
     event NewOracleEvent(address indexed oracle);
     event SwapSigned(
@@ -39,15 +45,70 @@ contract Gate is Ownable {
 
     mapping(bytes32 => Swap) swaps;
 
-    constructor() {}
+    constructor() {
+
+    }
+
+    modifier futureEndtime(uint256 endtime) {
+        require(
+            endtime > block.timestamp,
+            "endtime time must be in the future"
+        );
+        _;
+    }
+
+    modifier withdrawable(bytes32 swapId) {
+        require(
+            swaps[swapId].withdrawn == false,
+            "withdrawable: already withdrawn"
+        );
+        require(
+            swaps[swapId].refunded == false,
+            "withdrawable: already refunded"
+        );
+        _;
+    }
+
+    modifier refundable(bytes32 swapId) {
+        require(
+            swaps[swapId].sender == _msgSender(),
+            "refundable: not sender"
+        );
+        require(
+            swaps[swapId].refunded == false,
+            "refundable: already refunded"
+        );
+        require(
+            swaps[swapId].withdrawn == false,
+            "refundable: already withdrawn"
+        );
+        require(
+            swaps[swapId].endtime <= block.timestamp,
+            "refundable: endtime not yet passed"
+        );
+        _;
+    }
+
+    modifier isSwapExists(bytes32 swapId) {
+        require(
+            haveSwap(swapId),
+            "swap does not exist"
+        );
+        _;
+    }
 
     function fund(
         address fromToken,
         string memory toToken,
         string memory recipient,
         uint256 amount,
-        uint256 nonce
-    ) external returns (bytes32 res) {
+        uint256 nonce,
+        uint256 endtime
+    )
+        external
+        futureEndtime(endtime)
+        returns (bytes32 res)
+    {
         bytes32 swapId = sha256(
             abi.encodePacked(
                 fromToken,
@@ -64,11 +125,45 @@ contract Gate is Ownable {
         if (!IERC20(fromToken).transferFrom(_msgSender(), address(this), amount))
             revert("transferFrom sender to this failed");
 
-        swaps[swapId] = Swap(fromToken, toToken, _msgSender(), recipient, amount, nonce, "");
+        swaps[swapId] = Swap(fromToken, toToken, _msgSender(), recipient, amount, nonce, endtime, false, false, "");
 
         emit FundEvent(swapId, fromToken, toToken, _msgSender(), recipient, amount, nonce);
 
         return swapId;
+    }
+
+    function fundCancel(bytes32 swapId)
+        external
+        isSwapExists(swapId)
+        refundable(swapId)
+        returns (bool)
+    {
+        Swap storage swap = swaps[swapId];
+
+        swap.refunded = true;
+        IERC20(swap.fromToken).transfer(
+            swap.sender,
+            swap.amount
+        );
+        emit FundCancelEvent(swapId);
+
+        return true;
+    }
+
+    function sign(bytes32 swapId, bytes memory signature)
+        external
+        isSwapExists(swapId)
+        withdrawable(swapId)
+    {
+        (bytes32 r, bytes32 s, uint8 v) = parseSignature(signature);
+
+        address signer = ecrecover(getUnsignedMsg(swapId), v, r, s);
+        if (signer != oracle) {
+            revert SignatureInvalidV();
+        }
+        swaps[swapId].signature = signature;
+        swaps[swapId].withdrawn = true;
+        emit SwapSigned(swapId, signature);
     }
 
     function haveSwap(bytes32 swapId) internal view returns (bool exists) {
@@ -86,11 +181,14 @@ contract Gate is Ownable {
             string memory recipient,
             uint256 amount,
             uint256 nonce,
+            uint256 endtime,
+            bool withdrawn,
+            bool refunded,
             bytes memory signature
         )
     {
         if (haveSwap(swapId) == false)
-            return (0, address(0), "", address(0), "", 0, 0, "");
+            return (0, address(0), "", address(0), "", 0, 0, 0, false, false, "");
 
         Swap storage swap = swaps[swapId];
 
@@ -102,6 +200,9 @@ contract Gate is Ownable {
             swap.recipient,
             swap.amount,
             swap.nonce,
+            swap.endtime,
+            swap.withdrawn,
+            swap.refunded,
             swap.signature
         );
     }
@@ -125,21 +226,11 @@ contract Gate is Ownable {
         if (v != 27 && v != 28) revert SignatureInvalidV();
     }
 
-    function sign(bytes32 swapId, bytes memory signature) external {
-        (bytes32 r, bytes32 s, uint8 v) = parseSignature(signature);
-
-        address signer = ecrecover(getUnsignedMsg(swapId), v, r, s);
-        if (signer != oracle) {
-            revert SignatureInvalidV();
-        }
-        swaps[swapId].signature = signature;
-        emit SwapSigned(swapId, signature);
-    }
-
     function getUnsignedMsg(bytes32 data) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", data));
     }
 
+    // oracle features
     function setOracle(address _oracle) external onlyOwner {
         oracle = _oracle;
         emit NewOracleEvent(oracle);
