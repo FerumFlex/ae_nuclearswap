@@ -13,6 +13,8 @@ contract("GATE", (accounts) => {
   let nonce = 0;
   const wait_time = 2000;
 
+  console.log("Accounts:", accounts);
+
   beforeEach(async () => {
     gateInstance = await GATE.deployed();
     usdtInstance = await USDT.deployed();
