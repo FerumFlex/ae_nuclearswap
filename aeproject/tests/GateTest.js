@@ -2,17 +2,23 @@ const { assert } = require('chai');
 const { utils } = require('@aeternity/aeproject');
 const TOKEN_SOURCE = './contracts/FungibleTokenFull.aes';
 const GATE_SOURCE = './contracts/Gate.aes';
-const crypto = require('crypto');
+const HDWalletProvider = require("@truffle/hdwallet-provider");
+const Web3 = require("web3");
+const testUtils = require("./utils");
 
-function sha256(str) {
-  return crypto.createHash('sha256').update(str).digest();
+require('dotenv').config();
+
+function createWeb3() {
+  const mnemonic = process.env["MNEMONIC"];
+  let provider = new HDWalletProvider(mnemonic, 'http://127.0.0.1:7545');
+  const web3 = new Web3(provider);
+  return web3;
 }
 
 describe('Gate', () => {
   let aeSdk;
   let contractToken;
   let contractGate;
-  let original_amount = 1000000000;
   let mainAddress;
   let secondAddress;
 
@@ -49,22 +55,19 @@ describe('Gate', () => {
   // });
 
   it("claim -> success", async() => {
-    abi.encodePacked(
-      fromToken,
-      sha256(abi.encodePacked(toToken)),
-      _msgSender(),
-      sha256(abi.encodePacked(recipient)),
-      sha256(abi.encodePacked(Strings.toString(amount))),
-      sha256(abi.encodePacked(Strings.toString(nonce)))
-    )
-    let swapId = "0x362114583cfc48ae1df74ece23b84619777fc5765e434fbb85938ba294e72c90";
+    const web3 = createWeb3();
+    const accounts = await web3.eth.getAccounts();
+
     let fromToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
     let toToken = "ak_" + contractToken.deployInfo.address.substr(3);
-    let sender = "0x9a63911A6495D76b36a94025c16847E4E6236b7A";
+    let sender = accounts[0];
+    let oracle = accounts[1];
     let recipient = "ak_ZdF4zFqkaUjM5QqkefgvWS9PhRyyMFgdhMy9dgZFAqU9Ayp53";
     let amount = 10000000;
     let nonce = 1;
-    let signature = "d83d302b109eb123bc64912d0a970eb8d61af172b583f7c7a16cfae8f0ab12a461d7bdb653cae0c5a743104866962b01be0e3259b0dae7579e4b0a5cf25f25281b";
+
+    const swapId = testUtils.getSwapId(web3, fromToken, toToken, sender, recipient, amount, nonce);
+    const signature = await testUtils.getSignature(web3, oracle, swapId);
 
     let result = await contractGate.methods.claim(
       swapId,
@@ -77,8 +80,8 @@ describe('Gate', () => {
       signature,
     );
     console.log(result);
-    // console.log(contractGate.deployInfo.address);
-    // let hex = Buffer.from(result.decodedResult).toString('hex');
-    // console.log(hex);
+    console.log(contractGate.deployInfo.address);
+    let hex = Buffer.from(result.decodedResult).toString('hex');
+    console.log(hex);
   });
 });

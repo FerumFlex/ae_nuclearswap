@@ -72,6 +72,6 @@ contract Gate =
     let p4 = Bytes.concat(p3, Crypto.sha256(Int.to_str(amount)))
     let p5 = Bytes.concat(p4, Crypto.sha256(Int.to_str(nonce)))
     let correctSwapId = Crypto.sha256(p5)
-    require(correctSwapId == swapId, swapId)
+    require(correctSwapId == swapId, "Swap should match")
     tokenContract.mint(recipient, amount)
     put(state{ usedSwaps[swapId] = true })
