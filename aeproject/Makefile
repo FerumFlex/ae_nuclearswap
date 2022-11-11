@@ -21,7 +21,7 @@ deploy:
 # make
 # make docker
 repl:
-	docker run -i aeternity/aerepl:local
+	docker run --rm -i aeternity/aerepl:local
 
 address:
 	aecli account address local.wallet

@@ -41,11 +41,22 @@ async function getSignature(web3, account, swapId) {
   return hash;
 }
 
+function ethSignatureToAe(signature) {
+  let sigBytes = Buffer.from(signature.substr(2), "hex");
+  let v = sigBytes.slice(-1)
+  let convertedSignature = Buffer.concat([
+    v,
+    sigBytes.slice(0, -1)
+  ]);
+  return convertedSignature;
+}
+
 module.exports = {
   delay,
   sha256hash,
   sha256,
   encodePacked,
   getSwapId,
-  getSignature
+  getSignature,
+  ethSignatureToAe
 };

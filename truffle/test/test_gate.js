@@ -29,14 +29,6 @@ contract("GATE", (accounts) => {
 
   it("fund -> sign account", async() => {
     let result = await gateInstance.fund(usdtInstance.address, aeTokenAddress, aeAddress, amount, ++nonce);
-    console.log("Contract params", [
-      usdtInstance.address,
-      aeTokenAddress,
-      accounts[0],
-      aeAddress,
-      amount,
-      nonce,
-    ]);
 
     // get swap id
     let swapId = result.receipt.logs[0].args.swapId;
@@ -51,15 +43,14 @@ contract("GATE", (accounts) => {
       amount,
       nonce,
     )
-    console.log(`swapId ${swapId}`);
-    console.log(`calc swapId ${calcSwapId}`);
     assert.equal(swapId, calcSwapId);
 
     // sign
-    let signature = await utils.getSignature(web3, accounts[1], swapId);
-    console.log(`signature ${signature}`);
+    let message = swapId;
+    let signature = await utils.getSignature(web3, accounts[1], message);
     result = await gateInstance.sign(swapId, signature);
-    // let signer = await web3.eth.personal.ecRecover(message, hash);
+    let signer = await web3.eth.accounts.recover(message, signature);
+    assert.equal(signer.toLowerCase(), accounts[1].toLowerCase());
     assert.equal(result.logs[0].event, 'SwapSigned');
   });
 

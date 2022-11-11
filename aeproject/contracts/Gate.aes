@@ -58,10 +58,25 @@ contract Gate =
 
   // This defines the state of type record encapsulating the contract's mutable state
   record state =
-    { usedSwaps           : usedSwaps }
+    { owner                : address
+      , usedSwaps          : usedSwaps
+      , oracle             : bytes(20) }
 
-  entrypoint init() =
-    { usedSwaps           = {} }
+  entrypoint init(_oracle: bytes(20)) =
+    { owner                 = Call.caller,
+      usedSwaps             = {},
+      oracle                =  _oracle}
+
+  stateful entrypoint set_oracle(_oracle: bytes(20)) =
+    require_owner()
+    put(state{ oracle = _oracle })
+
+  function require_owner() =
+    require(Call.caller == state.owner, "ONLY_OWNER_CALL_ALLOWED")
+
+  entrypoint get_unsigned_msg(data: hash) : hash =
+    // 19457468657265756d205369676e6564204d6573736167653a0a3332 - is hash of the "\x19Ethereum Signed Message:\n32"
+    Crypto.sha3(Bytes.concat(#19457468657265756d205369676e6564204d6573736167653a0a3332, data))
 
   stateful entrypoint claim(swapId: hash, fromToken: bytes(20), toToken: address, sender: bytes(20), recipient: address, amount: int, nonce: int, signature: bytes(65)) =
     require(Map.lookup_default(swapId, state.usedSwaps, false) == false, "Swap should not be used")
@@ -72,6 +87,9 @@ contract Gate =
     let p4 = Bytes.concat(p3, Crypto.sha256(Int.to_str(amount)))
     let p5 = Bytes.concat(p4, Crypto.sha256(Int.to_str(nonce)))
     let correctSwapId = Crypto.sha256(p5)
-    require(correctSwapId == swapId, "Swap should match")
+
+    require(correctSwapId == swapId, "Swap_id is not valid")
+    require(Crypto.ecverify_secp256k1(get_unsigned_msg(swapId), state.oracle, signature), "Signature is not valid")
+
     tokenContract.mint(recipient, amount)
     put(state{ usedSwaps[swapId] = true })
