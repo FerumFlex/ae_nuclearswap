@@ -13,15 +13,20 @@ import {
 import { observer } from "mobx-react-lite"
 import { useStore } from './store';
 import { MantineProvider, ColorSchemeProvider, ColorScheme } from '@mantine/core';
-import { useEthers } from '@usedapp/core'
+import { useEthers, useTokenBalance } from '@usedapp/core'
+import usdtToken from './contracts/USDT.json';
 
 
 const App = observer(() => {
-  const { account } = useEthers()
-  const {aeWallet, ethWallet} = useStore()
+  const { account, chainId } = useEthers();
+  const {aeWallet, ethWallet} = useStore();
   const [colorScheme, setColorScheme] = useState<ColorScheme>('dark');
-  const toggleColorScheme = (value?: ColorScheme) =>
-    setColorScheme(value || (colorScheme === 'dark' ? 'light' : 'dark'));
+  const toggleColorScheme = (value?: ColorScheme) => setColorScheme(value || (colorScheme === 'dark' ? 'light' : 'dark'));
+
+  let chainIdStr : string = chainId ? chainId.toString() : "";
+  // @ts-ignore
+  let address = chainIdStr && usdtToken.networks[chainIdStr] ? usdtToken.networks[chainIdStr].address : "";
+  let usdtBalance = useTokenBalance(address, account);
 
   useEffect(() => {
     (async () => {
@@ -30,8 +35,8 @@ const App = observer(() => {
   }, [aeWallet]);
 
   useEffect(() => {
-    ethWallet.setAddress(account ? account : "");
-  }, [account, ethWallet])
+    ethWallet.setInfo(account ? account : "", chainId, usdtBalance?.toBigInt());
+  }, [account, chainId, usdtBalance, ethWallet])
 
   return (
     <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
@@ -42,10 +47,6 @@ const App = observer(() => {
             {
               "link": "/",
               "label": "Swap"
-            },
-            {
-              "link": "/lending",
-              "label": "Lending"
             },
             {
               "link": "/utils",

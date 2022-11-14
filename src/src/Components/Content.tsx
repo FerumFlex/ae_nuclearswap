@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import { createStyles, Text, Paper, Stack, Select, Group, Center, NumberInput, Button, Timeline } from '@mantine/core';
+import { useState } from 'react';
+import { createStyles, Text, Paper, Stack, Select, Group, Center, Button, Timeline } from '@mantine/core';
 import { IconExchange, IconCheck } from '@tabler/icons';
 import aeToken from '../contracts/ae_token.json';
-import aeHtlc from '../contracts/ae_htlc.json';
-import ethHtlc from '../contracts/HTLC_ERC20.json';
+import aeGate from '../contracts/ae_gate.json';
+import ethGate from '../contracts/Gate.json';
 import { useStore } from '../store';
 import { observer } from "mobx-react-lite";
 import { showNotification } from '@mantine/notifications';
 import { networks, bot_addr } from '../utils/Config';
 import { makeid, delay, hexdump } from '../utils/utils';
-import { useEthers } from '@usedapp/core'
+import { useEthers } from '@usedapp/core';
+import { FromBlock } from './FromBlock';
+import { ToBlock } from './ToBlock';
 
 const Buffer = require('buffer').Buffer;
 const Web3 = require('web3');
@@ -54,7 +56,7 @@ export const Content = observer( () => {
 
     setIsLoading(true);
     try {
-      const htlc_address = "ak" + aeHtlc.address.substr(2);
+      const gate_address = "ak" + aeGate.address.substr(2);
       const amount = fromValue * 1000000; // 6 number of digits
       const password = makeid(12);
       const secret_hash = sha256(password);
@@ -62,17 +64,17 @@ export const Content = observer( () => {
       // allowance tokens
       setCurrentAction(0);
       let result : any = null;
-      result = await aeWallet.usdtContract.methods.allowance({from_account: aeWallet.address, for_account: htlc_address})
+      result = await aeWallet.usdtContract.methods.allowance({from_account: aeWallet.address, for_account: gate_address})
       let allowed = result.decodedResult;
       if (allowed === undefined) {
-        await aeWallet.usdtContract.methods.create_allowance(htlc_address, amount);
+        await aeWallet.usdtContract.methods.create_allowance(gate_address, amount);
       } else if (allowed < amount) {
-        await aeWallet.usdtContract.methods.change_allowance(htlc_address, amount);
+        await aeWallet.usdtContract.methods.change_allowance(gate_address, amount);
       }
 
       setCurrentAction(1);
       const unix = Date.now() + 1 * 60 * 10 * 1000; // 1 hour
-      result = await aeWallet.htlcContract.methods.fund(aeToken.address, secret_hash, bot_addr, ethWallet.address, unix, amount);
+      result = await aeWallet.gateContract.methods.fund(aeToken.address, secret_hash, bot_addr, ethWallet.address, unix, amount);
       const lock_contract_id = result.decodedResult;
 
       console.log("lock contract id ", hexdump(lock_contract_id));
@@ -86,7 +88,7 @@ export const Content = observer( () => {
       // @ts-ignore
       const deployedNetwork: any = ethHtlc.networks[id];
       const contract = new web3.eth.Contract(
-        ethHtlc.abi,
+        ethGate.abi,
         deployedNetwork.address,
       );
 
@@ -135,10 +137,6 @@ export const Content = observer( () => {
     }
   };
 
-  const onChangeValue = (v: any) => {
-    setFromValue(v);
-  };
-
   const onExchange = () => {
     setfromNetwork(toNetwork);
     settoNetwork(fromNetwork);
@@ -156,16 +154,7 @@ export const Content = observer( () => {
           />
         </Group>
 
-        <Paper withBorder radius={"lg"} shadow="lg" style={{padding: "10px", backgroundColor: "rgb(20, 21, 23)"}}>
-          <Group position="apart" m={"xs"}>
-            <Text size={"xs"}><strong>Send:</strong></Text>
-            <Text size={"xs"}><strong>Max:</strong></Text>
-          </Group>
-          <Group position="apart" m={"xs"}>
-            <NumberInput style={{border: "0"}} variant="unstyled" value={fromValue} onChange={onChangeValue} defaultValue={0} />
-            <Text size={"sm"}>{aeWallet.usdtBalanceFormat.toString()}</Text>
-          </Group>
-        </Paper>
+        <FromBlock fromValue={fromValue} setFromValue={setFromValue} maxBalance={ethWallet.usdtBalance} />
 
         <Center style={{margin: "15px"}}>
           <IconExchange onClick={onExchange} size={48} className={classes.exchangeButton} strokeWidth={2} />
@@ -180,16 +169,7 @@ export const Content = observer( () => {
           />
         </Group>
 
-        <Paper withBorder radius={"lg"} shadow="lg" style={{padding: "10px", backgroundColor: "rgb(20, 21, 23)"}}>
-          <Group position="apart" m={"xs"}>
-            <Text size={"xs"}><strong>Receive(estimated):</strong></Text>
-            <Text size={"xs"}>&nbsp;</Text>
-          </Group>
-          <Group position="apart" m={"xs"}>
-            <NumberInput readOnly style={{border: "0"}} variant="unstyled" value={fromValue} defaultValue={0} />
-            <Text size={"sm"}>&nbsp;</Text>
-          </Group>
-        </Paper>
+        <ToBlock fromValue={fromValue} />
 
         <Center style={{paddingTop: "20px"}}>
           <Button loading={isLoading} size={"lg"} radius={"md"} onClick={doExchange}>Exchange</Button>

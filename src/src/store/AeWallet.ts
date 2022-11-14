@@ -1,15 +1,16 @@
 import { AeSdkAepp } from "@aeternity/aepp-sdk";
 import { makeAutoObservable } from "mobx"
 import aeToken from '../contracts/ae_token.json';
-import aeHtlc from '../contracts/ae_htlc.json';
+import aeGate from '../contracts/ae_gate.json';
 
 
 export default class AeWallet {
   address : string = "";
-  aeSdk : AeSdkAepp | null = null;
   usdtBalance = 0n;
+
+  aeSdk : AeSdkAepp | null = null;
   usdtContract : any | null = null;
-  htlcContract : any | null = null;
+  gateContract : any | null = null;
 
   constructor() {
     makeAutoObservable(this)
@@ -23,7 +24,7 @@ export default class AeWallet {
     this.aeSdk = _aeSdk;
     this.address = _address;
     this.usdtContract = await _aeSdk.getContractInstance({ aci: aeToken.aci, bytecode: aeToken.bytecode, contractAddress: aeToken.address});
-    this.htlcContract = await _aeSdk.getContractInstance({ aci: aeHtlc.aci, bytecode: aeHtlc.bytecode, contractAddress: aeHtlc.address});
+    this.gateContract = await _aeSdk.getContractInstance({ aci: aeGate.aci, bytecode: aeGate.bytecode, contractAddress: aeGate.address});
 
     await this.updateBalance();
     setInterval(async () => {
