@@ -21,7 +21,6 @@ export const initSdk = async(aeWallet : AeWallet) => {
     onNetworkChange: async ({ networkId }) => {
       const [{ name }] = (await aeSdk.getNodesInPool()).filter((node) => node.nodeNetworkId === networkId);
       aeSdk.selectNode(name);
-      console.log("networkId", networkId);
     },
     onAddressChange: ({ current }) => console.log(current),
     onDisconnect: () => console.log('Aepp is disconnected')

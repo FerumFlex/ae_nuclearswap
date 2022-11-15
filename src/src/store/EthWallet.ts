@@ -1,7 +1,7 @@
 import { makeAutoObservable } from "mobx"
+import { IWallet, WalletInfo } from "./Wallet";
 
-
-export default class EthWallet {
+export default class EthWallet implements IWallet {
   address : string = "";
   networkId: number | undefined;
   usdtBalance: bigint | undefined = 0n;
@@ -15,4 +15,28 @@ export default class EthWallet {
     this.networkId = _networkId;
     this.usdtBalance = _usdtBalance;
   }
+
+  getusdtBalanceFormat() : bigint | undefined {
+    return this.usdtBalance ? this.usdtBalance / 1000000n : undefined;
+  }
+
+  getAddress(): string | undefined {
+    return this.address;
+  }
+
+  getUsdtBalance(): bigint | undefined{
+    return this.usdtBalance;
+  }
+
+  getNetworkId(): number | undefined {
+    return this.networkId;
+  }
+
+  getInfo() : WalletInfo {
+    return {
+      "name": "Ethereum Goerli",
+      "symbol": "ETH"
+    }
+  }
+
 }

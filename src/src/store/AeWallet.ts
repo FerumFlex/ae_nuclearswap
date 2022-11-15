@@ -2,11 +2,13 @@ import { AeSdkAepp } from "@aeternity/aepp-sdk";
 import { makeAutoObservable } from "mobx"
 import aeToken from '../contracts/ae_token.json';
 import aeGate from '../contracts/ae_gate.json';
+import { IWallet, WalletInfo } from "./Wallet";
 
 
-export default class AeWallet {
+export default class AeWallet implements IWallet{
   address : string = "";
   usdtBalance = 0n;
+  networkId: number | undefined;
 
   aeSdk : AeSdkAepp | null = null;
   usdtContract : any | null = null;
@@ -41,7 +43,26 @@ export default class AeWallet {
     this.usdtBalance = balance;
   }
 
-  get usdtBalanceFormat() {
+  getusdtBalanceFormat() : bigint | undefined {
     return this.usdtBalance / 1000000n;
+  }
+
+  getAddress(): string | undefined {
+    return this.address;
+  }
+
+  getUsdtBalance(): bigint | undefined{
+    return this.usdtBalance;
+  }
+
+  getNetworkId(): number | undefined {
+    return this.networkId;
+  }
+
+  getInfo() : WalletInfo {
+    return {
+      "name": "AE Testnet",
+      "symbol": "AE"
+    }
   }
 }

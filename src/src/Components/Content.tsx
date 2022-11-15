@@ -7,7 +7,7 @@ import ethGate from '../contracts/Gate.json';
 import { useStore } from '../store';
 import { observer } from "mobx-react-lite";
 import { showNotification } from '@mantine/notifications';
-import { networks, bot_addr } from '../utils/Config';
+import { bot_addr } from '../utils/Config';
 import { makeid, delay, hexdump } from '../utils/utils';
 import { useEthers } from '@usedapp/core';
 import { FromBlock } from './FromBlock';
@@ -27,9 +27,15 @@ const useStyles = createStyles((theme) => ({
 
 export const Content = observer( () => {
   const { account } = useEthers();
-  const {aeWallet, ethWallet, contracts } = useStore();
-  const [fromNetwork, setfromNetwork] = useState<string>(networks[0].value);
-  const [toNetwork, settoNetwork] = useState<string>(networks[1].value);
+  const {aeWallet, ethWallet, contracts, wallets } = useStore();
+  const networks = [ ...wallets.wallets].map((w) => {
+    let info = w.getInfo();
+    return {
+      value: info.symbol,
+      label: info.name
+    }
+  });
+
   const [isLoading, setIsLoading] = useState(false);
   const [fromValue, setFromValue] = useState(0);
   const [currentAction, setCurrentAction] = useState<number | null>(null);
@@ -75,9 +81,9 @@ export const Content = observer( () => {
       setCurrentAction(1);
       const unix = Date.now() + 1 * 60 * 10 * 1000; // 1 hour
       result = await aeWallet.gateContract.methods.fund(aeToken.address, secret_hash, bot_addr, ethWallet.address, unix, amount);
-      const lock_contract_id = result.decodedResult;
+      const swap_id = result.decodedResult;
 
-      console.log("lock contract id ", hexdump(lock_contract_id));
+      console.log("swap id ", hexdump(swap_id));
       console.log("password ", password);
       console.log("secret_hash ", secret_hash);
 
@@ -130,16 +136,15 @@ export const Content = observer( () => {
         }
       }
 
-      contracts.addContract(lock_contract_id, secret_hash, password);
+      contracts.addContract(swap_id, secret_hash, password);
     } finally {
       setIsLoading(false);
       setCurrentAction(null);
     }
   };
 
-  const onExchange = () => {
-    setfromNetwork(toNetwork);
-    settoNetwork(fromNetwork);
+  const onExchangeFromTo = () => {
+    wallets.exchangeWallets();
   };
 
   return (
@@ -150,14 +155,14 @@ export const Content = observer( () => {
           <Select
             radius={"lg"}
             data={networks}
-            value={fromNetwork}
+            value={wallets.fromWallet.getInfo().symbol}
           />
         </Group>
 
-        <FromBlock fromValue={fromValue} setFromValue={setFromValue} maxBalance={ethWallet.usdtBalance} />
+        <FromBlock fromValue={fromValue} setFromValue={setFromValue} maxBalance={wallets.fromWallet.getUsdtBalance()} />
 
         <Center style={{margin: "15px"}}>
-          <IconExchange onClick={onExchange} size={48} className={classes.exchangeButton} strokeWidth={2} />
+          <IconExchange onClick={onExchangeFromTo} size={48} className={classes.exchangeButton} strokeWidth={2} />
         </Center>
 
         <Group m="xs">
@@ -165,7 +170,7 @@ export const Content = observer( () => {
           <Select
             radius={"lg"}
             data={networks}
-            value={toNetwork}
+            value={wallets.toWallet.getInfo().symbol}
           />
         </Group>
 
@@ -185,10 +190,10 @@ export const Content = observer( () => {
                 <Text color="dimmed" size="sm">Fund contract with tokens</Text>
               </Timeline.Item>
               <Timeline.Item bullet={<IconCheck size={12} />} title="Waiting">
-                <Text color="dimmed" size="sm">Waiting for fund from other side</Text>
+                <Text color="dimmed" size="sm">Waiting for signature</Text>
               </Timeline.Item>
               <Timeline.Item bullet={<IconCheck size={12} />} title="Withdraw">
-                <Text color="dimmed" size="sm">Withdraw funds</Text>
+                <Text color="dimmed" size="sm">Claim funds</Text>
               </Timeline.Item>
             </Timeline>
           </Center>
