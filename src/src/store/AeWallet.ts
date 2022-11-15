@@ -1,3 +1,4 @@
+import { BigNumber } from "bignumber.js";
 import { AeSdkAepp } from "@aeternity/aepp-sdk";
 import { makeAutoObservable } from "mobx"
 import aeToken from '../contracts/ae_token.json';
@@ -6,7 +7,7 @@ import { IWallet, WalletInfo } from "./Wallet";
 
 
 export default class AeWallet implements IWallet{
-  address : string = "";
+  address : string | undefined;
   usdtBalance = 0n;
   networkId: number | undefined;
 
@@ -43,8 +44,8 @@ export default class AeWallet implements IWallet{
     this.usdtBalance = balance;
   }
 
-  getusdtBalanceFormat() : bigint | undefined {
-    return this.usdtBalance / 1000000n;
+  getusdtBalanceFormat() : BigNumber | undefined {
+    return this.usdtBalance ? new BigNumber(this.usdtBalance.toString()).dividedBy(10 ** this.getPrecision()) : undefined;
   }
 
   getAddress(): string | undefined {
@@ -57,6 +58,10 @@ export default class AeWallet implements IWallet{
 
   getNetworkId(): number | undefined {
     return this.networkId;
+  }
+
+  getPrecision() : number {
+    return 6;
   }
 
   getInfo() : WalletInfo {

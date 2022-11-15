@@ -1,4 +1,3 @@
-import React from "react";
 import { Button, Badge } from '@mantine/core';
 import { useStore } from "../store";
 import { observer } from "mobx-react-lite";

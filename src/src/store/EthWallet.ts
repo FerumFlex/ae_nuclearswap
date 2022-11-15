@@ -1,8 +1,9 @@
+import { BigNumber } from "bignumber.js";
 import { makeAutoObservable } from "mobx"
 import { IWallet, WalletInfo } from "./Wallet";
 
 export default class EthWallet implements IWallet {
-  address : string = "";
+  address : string | undefined;
   networkId: number | undefined;
   usdtBalance: bigint | undefined = 0n;
 
@@ -16,8 +17,8 @@ export default class EthWallet implements IWallet {
     this.usdtBalance = _usdtBalance;
   }
 
-  getusdtBalanceFormat() : bigint | undefined {
-    return this.usdtBalance ? this.usdtBalance / 1000000n : undefined;
+  getusdtBalanceFormat() : BigNumber | undefined {
+    return this.usdtBalance ? new BigNumber(this.usdtBalance.toString()).dividedBy(10 ** this.getPrecision()) : undefined;
   }
 
   getAddress(): string | undefined {
@@ -30,6 +31,10 @@ export default class EthWallet implements IWallet {
 
   getNetworkId(): number | undefined {
     return this.networkId;
+  }
+
+  getPrecision() : number {
+    return 6;
   }
 
   getInfo() : WalletInfo {
