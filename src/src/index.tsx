@@ -4,7 +4,6 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { BrowserRouter } from "react-router-dom";
-import { NotificationsProvider } from '@mantine/notifications';
 import store, { StoreContext } from './store';
 import { DAppProvider } from '@usedapp/core'
 import { config } from './utils/Config';
@@ -18,11 +17,9 @@ root.render(
   <React.StrictMode>
     <StoreContext.Provider value={store}>
       <DAppProvider config={config}>
-        <NotificationsProvider position="top-right">
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </NotificationsProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
       </DAppProvider>
     </StoreContext.Provider>
   </React.StrictMode>

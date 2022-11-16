@@ -2,7 +2,7 @@ import { AeSdkAepp } from "@aeternity/aepp-sdk";
 import aeToken from '../contracts/ae_token.json';
 import aeGate from '../contracts/ae_gate.json';
 import { IWallet, WalletInfo } from "./Wallet";
-import { makeObservable, action, computed, observable } from "mobx"
+import { makeObservable, action, observable } from "mobx"
 
 
 export default class AeWallet extends IWallet{

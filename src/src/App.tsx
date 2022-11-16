@@ -15,6 +15,7 @@ import { useStore } from './store';
 import { MantineProvider, ColorSchemeProvider, ColorScheme } from '@mantine/core';
 import { useEthers, useTokenBalance } from '@usedapp/core'
 import usdtToken from './contracts/USDT.json';
+import { NotificationsProvider } from '@mantine/notifications';
 
 
 const App = observer(() => {
@@ -41,25 +42,27 @@ const App = observer(() => {
   return (
     <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
       <MantineProvider theme={{ colorScheme }} withGlobalStyles withNormalizeCSS>
-        <AppShell
-          padding="md"
-          header={<HeaderResponsive links={[
-            {
-              "link": "/",
-              "label": "Swap"
-            },
-            {
-              "link": "/utils",
-              "label": "Utils"
-            }
-          ]} />}
-          footer={<FooterCentered links={[]} />}
-        >
-          <Routes>
-            <Route path="/" element={<Content />}></Route>
-            <Route path="/utils" element={<Utils />}></Route>
-          </Routes>
-        </AppShell>
+        <NotificationsProvider position="top-right">
+          <AppShell
+            padding="md"
+            header={<HeaderResponsive links={[
+              {
+                "link": "/",
+                "label": "Swap"
+              },
+              {
+                "link": "/utils",
+                "label": "Utils"
+              }
+            ]} />}
+            footer={<FooterCentered links={[]} />}
+          >
+            <Routes>
+              <Route path="/" element={<Content />}></Route>
+              <Route path="/utils" element={<Utils />}></Route>
+            </Routes>
+          </AppShell>
+        </NotificationsProvider>
       </MantineProvider>
     </ColorSchemeProvider>
   );

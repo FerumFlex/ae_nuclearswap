@@ -1,6 +1,6 @@
 import { IWallet, WalletInfo } from "./Wallet";
 import { getExplorerAddressLink } from '@usedapp/core';
-import { makeObservable, action, computed } from "mobx"
+import { makeObservable, action } from "mobx"
 
 export default class EthWallet extends IWallet {
   constructor() {
