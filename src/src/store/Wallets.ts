@@ -57,7 +57,7 @@ export default class Wallets {
 
   getWalletBySymbol(symbol: string) : IWallet | undefined {
     for (let wallet of this.wallets) {
-      if (wallet.getInfo().symbol !== symbol) {
+      if (wallet.info.symbol !== symbol) {
         return wallet;
       }
     }

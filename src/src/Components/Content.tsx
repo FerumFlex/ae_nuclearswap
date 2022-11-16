@@ -20,7 +20,7 @@ const useStyles = createStyles((theme) => ({
 export const Content = observer( () => {
   const {aeWallet, ethWallet, contracts, wallets,  } = useStore();
   const networks = [ ...wallets.wallets].map((w) => {
-    let info = w.getInfo();
+    let info = w.info;
     return {
       value: info.symbol,
       label: info.name
@@ -28,7 +28,7 @@ export const Content = observer( () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [fromValue, setFromValue] = useState(10n * 10n ** BigInt(wallets.fromWallet.getPrecision()));
+  const [fromValue, setFromValue] = useState(10n * 10n ** BigInt(wallets.fromWallet.precision));
   const [currentAction, setCurrentAction] = useState<number | null>(null);
   const { classes } = useStyles();
   const { chainId, library } = useEthers();
@@ -52,9 +52,9 @@ export const Content = observer( () => {
       return;
     }
 
-    if (wallets.fromWallet.getInfo().symbol === "AE") {
+    if (wallets.fromWallet.info.symbol === "AE") {
       aeToEth(aeWallet, ethWallet, contracts, fromValue, setIsLoading, setCurrentAction);
-    } else if (wallets.fromWallet.getInfo().symbol === "ETH") {
+    } else if (wallets.fromWallet.info.symbol === "ETH") {
       ethToAe(library, chainId, aeWallet, ethWallet, contracts, fromValue, setIsLoading, setCurrentAction);
     }
   };
@@ -63,7 +63,7 @@ export const Content = observer( () => {
     wallets.exchangeWallets();
   };
 
-  const convertedFromValue = Number(fromValue) / (10 ** wallets.fromWallet.getPrecision());
+  const convertedFromValue = Number(fromValue) / (10 ** wallets.fromWallet.precision);
 
   return (
     <Stack align="center" justify="center" style={{backgroundColor: "unset", height: "100%"}}>
@@ -73,15 +73,15 @@ export const Content = observer( () => {
           <Select
             radius={"lg"}
             data={networks}
-            value={wallets.fromWallet.getInfo().symbol}
+            value={wallets.fromWallet.info.symbol}
           />
         </Group>
 
         <FromBlock
           fromValue={convertedFromValue}
-          precision={wallets.fromWallet.getPrecision()}
+          precision={wallets.fromWallet.precision}
           setFromValue={setFromValue}
-          maxBalance={wallets.fromWallet.getusdtBalanceFormat()?.toNumber()}
+          maxBalance={wallets.fromWallet.usdtBalanceFormat?.toNumber()}
         />
 
         <Center style={{margin: "15px"}}>
@@ -93,13 +93,13 @@ export const Content = observer( () => {
           <Select
             radius={"lg"}
             data={networks}
-            value={wallets.toWallet.getInfo().symbol}
+            value={wallets.toWallet.info.symbol}
           />
         </Group>
 
         <ToBlock
           fromValue={convertedFromValue}
-          precision={wallets.fromWallet.getPrecision()}
+          precision={wallets.fromWallet.precision}
         />
 
         <Center style={{paddingTop: "20px"}}>

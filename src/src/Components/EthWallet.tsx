@@ -4,7 +4,7 @@ import { shortenAddress } from '@usedapp/core'
 import { Button, Badge, Anchor } from '@mantine/core';
 import { useStore } from '../store';
 import { observer } from 'mobx-react-lite';
-import { useEthers, getExplorerAddressLink } from '@usedapp/core'
+import { useEthers } from '@usedapp/core'
 
 
 export const EthWallet = observer(() => {
@@ -26,10 +26,10 @@ export const EthWallet = observer(() => {
         <Badge>
             <Anchor
               target={"_blank"}
-              href={getExplorerAddressLink(ethWallet.address, chainId)}
+              href={ethWallet.explorerAddressLink}
             >ETH - {shortenAddress(ethWallet.address)}</Anchor>
           </Badge> :
-        <Button variant="light" compact onClick={onConnect}>Connect</Button>
+        <Button variant="light" compact onClick={onConnect}>ETH Connect</Button>
       }
     </span>
   )

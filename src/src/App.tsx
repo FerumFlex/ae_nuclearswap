@@ -35,7 +35,7 @@ const App = observer(() => {
   }, [aeWallet]);
 
   useEffect(() => {
-    ethWallet.setInfo(account ? account : "", chainId, usdtBalance?.toBigInt());
+    ethWallet.setInfo(account ? account : "", chainId?.toString(), usdtBalance?.toBigInt());
   }, [account, chainId, usdtBalance, ethWallet])
 
   return (

@@ -74,8 +74,6 @@ export function Utils() {
   return (
     <Stack align="center" justify="center" style={{backgroundColor: "unset", height: "100%"}}>
       <Paper withBorder radius="md" shadow="lg" p="md" style={{width: "500px", padding: "20px"}}>
-        <h2>Ae explorer</h2>
-        <Anchor target="_blank" href={`https://explorer.testnet.aeternity.io/account/${aeWallet.address}`}>Open explorer</Anchor>
         <h2>Aeternity Faucet</h2>
         <Button loading={aeFaucetLoading} onClick={doEternityFaucet}>Get Aeternity</Button>
         <h2>Goerli faucet</h2>

@@ -26,23 +26,23 @@ export const initSdk = async(aeWallet : AeWallet) => {
     onDisconnect: () => console.log('Aepp is disconnected')
   });
 
-  let address = await scanForWallet(aeSdk);
+  let [address, networkId] = await scanForWallet(aeSdk);
 
-  await aeWallet.setSdk(aeSdk, address);
+  await aeWallet.setSdk(aeSdk, address, networkId);
 
   return aeSdk;
 }
 
-export const scanForWallet = async (aeSdk: AeSdkAepp) : Promise<string> => {
+export const scanForWallet = async (aeSdk: AeSdkAepp) : Promise<[string, string]> => {
   return new Promise((resolve) => {
       const handleWallets = async ({ wallets, newWallet}: {wallets: any, newWallet? : any | undefined}) => {
       newWallet = newWallet || Object.values(wallets)[0];
       stopScan();
 
-      await aeSdk.connectToWallet(newWallet.getConnection());
+      const conn = await aeSdk.connectToWallet(newWallet.getConnection());
       const { address: { current } } = await aeSdk.subscribeAddress(SUBSCRIPTION_TYPES.subscribe, 'connected')
       let address = Object.keys(current)[0];
-      resolve(address);
+      resolve([address, conn.networkId]);
     }
 
     const scannerConnection = new BrowserWindowMessageConnection();

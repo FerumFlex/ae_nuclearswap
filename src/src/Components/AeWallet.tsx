@@ -1,6 +1,11 @@
-import { Button, Badge } from '@mantine/core';
+import { Button, Badge, Anchor } from '@mantine/core';
 import { useStore } from "../store";
 import { observer } from "mobx-react-lite";
+
+
+function shortenAddress(address: string) : string {
+  return address.substr(0, 6) + "..." + address.substr(-4);
+}
 
 
 export const AeWallet = observer(() => {
@@ -12,8 +17,15 @@ export const AeWallet = observer(() => {
   return (
     <span>
       {aeWallet.address ?
-        <Badge>AE - {aeWallet.address.substr(0, 5) + "..." + aeWallet.address.substr(-4)}</Badge> :
-        <Button variant="light" compact onClick={onConnect}>Connect</Button>
+        <Badge>
+          <Anchor
+            target={"_blank"}
+            href={aeWallet.explorerAddressLink}
+          >
+            AE - {shortenAddress(aeWallet.address)}
+          </Anchor>
+        </Badge> :
+        <Button variant="light" compact onClick={onConnect}>AE Connect</Button>
       }
     </span>
   )
