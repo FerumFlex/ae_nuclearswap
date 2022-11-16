@@ -11,3 +11,4 @@ aeproject/docker
 *.wallet
 third_party/
 k8s/
+truffle/build/*.sol

@@ -9,4 +9,5 @@ export const config: Config = {
   readOnlyUrls: {
     [Goerli.chainId]: "https://goerli.infura.io/v3/" + REACT_APP_INFURA_PROJECT_ID,
   },
+  refresh: 'everyBlock',
 };

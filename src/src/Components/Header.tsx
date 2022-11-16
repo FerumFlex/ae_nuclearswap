@@ -141,9 +141,11 @@ export function HeaderResponsive({links }: HeaderResponsiveProps) {
               <EthWallet />
             </Grid.Col>
             <Grid.Col span={4}>
+              {/*
               <ActionIcon variant="default" onClick={() => toggleColorScheme()} size={30}>
                 {colorScheme === 'dark' ? <IconSun size={16} /> : <IconMoonStars size={16} />}
               </ActionIcon>
+              */}
             </Grid.Col>
           </Grid>
         </Grid.Col>

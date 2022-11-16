@@ -5,6 +5,10 @@ import { makeid, delay, hexdump } from '../utils/utils';
 import aeToken from '../contracts/ae_token.json';
 import aeGate from '../contracts/ae_gate.json';
 import ethGate from '../contracts/Gate.json';
+import ethUsdt from '../contracts/USDT.json';
+import { getContract } from '../utils/utils';
+import { IconCheck, IconX } from '@tabler/icons';
+import {BigNumber} from 'bignumber.js';
 
 const Buffer = require('buffer').Buffer;
 const Web3 = require('web3');
@@ -94,12 +98,69 @@ export async function aeToEth(aeWallet: any, ethWallet: any, contracts: any, amo
   }
 }
 
-export async function ethToAe(aeWallet: any, ethWallet: any, contracts: any, amount: bigint, setIsLoading: any, setCurrentAction: any) {
+export async function ethToAe(provider: any, chainId: number | undefined, aeWallet: any, ethWallet: any, contracts: any, amount: bigint, setIsLoading: any, setCurrentAction: any) {
   setIsLoading(true);
   try {
     setCurrentAction(0);
 
-    await delay(5000);
+    let gateContractWithSigner = getContract(provider, chainId, ethGate);
+    if (! gateContractWithSigner) {
+      showNotification({
+        color: 'red',
+        title: 'Error',
+        message: 'Gate contract is not uploaded for this network',
+        icon: <IconX size={16} />,
+      });
+      return;
+    }
+
+    let usdtAddressWithSigner = getContract(provider, chainId, ethUsdt);
+    if (! usdtAddressWithSigner) {
+      showNotification({
+        color: 'red',
+        title: 'Error',
+        message: 'Usdt contract is not uploaded for this network',
+        icon: <IconX size={16} />,
+      });
+      return;
+    }
+
+    const allowance = await usdtAddressWithSigner.allowance(ethWallet.address, gateContractWithSigner.address);
+    if (allowance.toBigInt() < amount) {
+      await usdtAddressWithSigner.approve(gateContractWithSigner.address, "115792089237316195423570985008687907853269984665640564039457584007913129639935")
+    }
+
+    setCurrentAction(1);
+
+    let toToken = "ak" + aeToken.address.substr(2);
+    const unix = Date.now() + 1 * 60 * 10 * 1000; // 1 hour
+    const nonce = +new Date();
+
+    try {
+      let tx = await gateContractWithSigner.fund(usdtAddressWithSigner.address, toToken, aeWallet.address, amount, nonce, unix);
+      let result = await tx.wait();
+
+      if (!(result.events.length === 2 && result.events[1].event === "FundEvent")) {
+        showNotification({
+          color: 'red',
+          title: 'Error',
+          message: 'Can not find fund event',
+          icon: <IconX size={16} />,
+        });
+      }
+
+      let fund_event = result.events[1];
+      let swapId = fund_event.args[0];
+      let swap = await gateContractWithSigner.getSwap(swapId);
+      console.log(swap);
+    } catch (e: any) {
+      showNotification({
+        color: 'red',
+        title: 'Error',
+        message: e.reason,
+        icon: <IconX size={16} />,
+      });
+    }
 
   } finally {
     setIsLoading(false);

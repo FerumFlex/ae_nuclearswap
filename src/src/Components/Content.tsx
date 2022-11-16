@@ -8,7 +8,7 @@ import { FromBlock } from './FromBlock';
 import { ToBlock } from './ToBlock';
 import Progress from './Progress';
 import { aeToEth, ethToAe } from './Actions';
-import { BigNumber } from 'ethers';
+import { useEthers } from '@usedapp/core'
 
 
 const useStyles = createStyles((theme) => ({
@@ -18,7 +18,7 @@ const useStyles = createStyles((theme) => ({
 }));
 
 export const Content = observer( () => {
-  const {aeWallet, ethWallet, contracts, wallets } = useStore();
+  const {aeWallet, ethWallet, contracts, wallets,  } = useStore();
   const networks = [ ...wallets.wallets].map((w) => {
     let info = w.getInfo();
     return {
@@ -28,9 +28,10 @@ export const Content = observer( () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [fromValue, setFromValue] = useState(10n * 10n ** BigInt(wallets.fromWallet.getPrecision()) + 100000n);
+  const [fromValue, setFromValue] = useState(10n * 10n ** BigInt(wallets.fromWallet.getPrecision()));
   const [currentAction, setCurrentAction] = useState<number | null>(null);
   const { classes } = useStyles();
+  const { chainId, library } = useEthers();
 
   const doExchange = async () => {
     if (!aeWallet.address) {
@@ -54,7 +55,7 @@ export const Content = observer( () => {
     if (wallets.fromWallet.getInfo().symbol === "AE") {
       aeToEth(aeWallet, ethWallet, contracts, fromValue, setIsLoading, setCurrentAction);
     } else if (wallets.fromWallet.getInfo().symbol === "ETH") {
-      ethToAe(aeWallet, ethWallet, contracts, fromValue, setIsLoading, setCurrentAction);
+      ethToAe(library, chainId, aeWallet, ethWallet, contracts, fromValue, setIsLoading, setCurrentAction);
     }
   };
 

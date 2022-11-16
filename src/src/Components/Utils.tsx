@@ -6,6 +6,7 @@ import { ethers } from "ethers";
 import usdtToken from '../contracts/USDT.json';
 import { useEthers } from '@usedapp/core'
 import { IconCheck, IconX } from '@tabler/icons';
+import { getContract } from '../utils/utils';
 
 
 export function Utils() {
@@ -23,7 +24,9 @@ export function Utils() {
       showNotification({
         title: 'Faucet added',
         message: 'We added 5 aeternity to your wallet',
-      })
+        color: 'teal',
+        icon: <IconCheck size={16} />,
+      });
     } finally {
       setAeFaucetLoading(false);
     }
@@ -33,24 +36,20 @@ export function Utils() {
     setEthFauceUsdttLoading(true);
     try {
       // @ts-ignore
-      const signer = library?.getSigner();
-      let chainIdStr : string = chainId ? chainId.toString() : "";
-      // @ts-ignore
-      let contractAddress = chainIdStr && usdtToken.networks[chainIdStr] ? usdtToken.networks[chainIdStr].address : "";
-      if (! contractAddress) {
-        showNotification({
-          title: 'Error',
-          color: 'red',
-          message: 'Contract is not uploaded for this network',
-          icon: <IconX size={16} />,
-        })
-        return;
-      }
-      const usdtContract = new ethers.Contract(contractAddress, usdtToken.abi, library);
-      const usdtContractWithSigner = usdtContract.connect(signer);
 
       const amount = ethers.utils.parseUnits("100.0", ethWallet.getPrecision());
       try {
+        let usdtContractWithSigner = getContract(library, chainId, usdtToken);
+        if (! usdtContractWithSigner) {
+          showNotification({
+            title: 'Error',
+            color: 'red',
+            message: 'Contract is not uploaded for this network',
+            icon: <IconX size={16} />,
+          })
+          return;
+        }
+
         await usdtContractWithSigner.mint(ethWallet.address, amount);
 
         showNotification({
