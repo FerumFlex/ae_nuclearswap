@@ -71,6 +71,9 @@ contract Gate =
     require_owner()
     put(state{ oracle = _oracle })
 
+  stateful entrypoint get_oracle() : bytes(20) =
+    state.oracle
+
   function require_owner() =
     require(Call.caller == state.owner, "ONLY_OWNER_CALL_ALLOWED")
 

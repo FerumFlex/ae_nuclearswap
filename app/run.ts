@@ -1,6 +1,4 @@
 const HDWalletProvider = require("@truffle/hdwallet-provider");
-// const contract = require("@truffle/contract");
-// const Contract = require('web3-eth-contract');
 const ethGate = require('./contracts/gate.json');
 
 const Web3 = require('web3');
@@ -30,29 +28,12 @@ const gateContractSigner = new web3Signer.eth.Contract(ethGate.abi, ethGate.netw
 const main = async () => {
   console.log(`Started eth ${ETH_SELF_ADDRESS}`);
 
-  // const ethHGateContract = contract(ethGate);
-  // ethHGateContract.setProvider(ethProvider);
-  // ethHGateContract.hasNetwork(ETH_NETWOKR_ID);
-  // ethHGateContract.defaults({
-  //   from: ETH_SELF_ADDRESS,
-  //   gas: 4500000,
-  //   gasPrice: 10000000000
-  // });
-  // Contract.setProvider(ethProvider);
-  // console.log(`Contract address ${ethGate.networks[ETH_NETWOKR_ID].address}`);
-  // var contract = new Contract(ethGate.abi, ethGate.networks[ETH_NETWOKR_ID].address);
-
   let options = {
     filter: {
         value: [],
     },
     fromBlock: 0
   };
-  // contract.events.FundEvent(options)
-  //         .on('data', (event: any) => console.log(event))
-  //         .on('changed', (changed: any) => console.log(changed))
-  //         .on('error', (err: any) => console.log(err))
-  //         .on('connected', (str: any) => console.log(str))
 
   gateContract.events.FundEvent(options)
           .on('data', onFundEvent)

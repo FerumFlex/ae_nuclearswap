@@ -97,6 +97,27 @@ export async function aeToEth(aeWallet: any, ethWallet: any, contracts: any, amo
   }
 }
 
+
+function waitForSigned(gateContractWithSigner: any, swapId: string) : Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    gateContractWithSigner.on('SwapSigned', (signedSwapId: string, signature: string) => {
+      if (swapId === signedSwapId) {
+        resolve(signature);
+      }
+    });
+  });
+}
+
+function ethSignatureToAe(signature: string) : string {
+  let sigBytes = Buffer.from(signature.substr(2), "hex");
+  let v = sigBytes.slice(-1)
+  let convertedSignature = Buffer.concat([
+    v,
+    sigBytes.slice(0, -1)
+  ]);
+  return convertedSignature;
+}
+
 export async function ethToAe(provider: any, chainId: number | undefined, aeWallet: any, ethWallet: any, contracts: any, amount: bigint, setIsLoading: any, setCurrentAction: any) {
   setIsLoading(true);
   try {
@@ -132,11 +153,11 @@ export async function ethToAe(provider: any, chainId: number | undefined, aeWall
     setCurrentAction(1);
 
     let toToken = "ak" + aeToken.address.substr(2);
-    const unix = Date.now() + 1 * 60 * 10 * 1000; // 1 hour
+    const endtime = Date.now() + 1 * 60 * 10 * 1000; // 1 hour
     const nonce = +new Date();
 
     try {
-      let tx = await gateContractWithSigner.fund(usdtAddressWithSigner.address, toToken, aeWallet.address, amount, nonce, unix);
+      let tx = await gateContractWithSigner.fund(usdtAddressWithSigner.address, toToken, aeWallet.address, amount, nonce, endtime);
       let result = await tx.wait();
 
       if (!(result.events.length === 2 && result.events[1].event === "FundEvent")) {
@@ -150,10 +171,36 @@ export async function ethToAe(provider: any, chainId: number | undefined, aeWall
 
       let fund_event = result.events[1];
       let swapId = fund_event.args[0];
+
       console.log(`Swap id ${swapId}`);
       let swap = await gateContractWithSigner.getSwap(swapId);
       console.log(swap);
+
+      setCurrentAction(2);
+      let signature = await waitForSigned(gateContractWithSigner, swapId);
+      console.log(signature);
+
+      setCurrentAction(3);
+      result = await aeWallet.gateContract.methods.claim(
+        swapId,
+        Buffer.from(usdtAddressWithSigner.address.substr(2), "hex"),
+        toToken,
+        Buffer.from(ethWallet.address.substr(2), "hex"),
+        aeWallet.address,
+        amount,
+        nonce,
+        ethSignatureToAe(signature),
+      );
+      console.log(result);
+
+      showNotification({
+        color: 'teal',
+        title: 'Success',
+        message: 'You have claimed tokens',
+        icon: <IconCheck size={16} />,
+      });
     } catch (e: any) {
+      console.log(e);
       showNotification({
         color: 'red',
         title: 'Error',
