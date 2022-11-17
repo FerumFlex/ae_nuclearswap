@@ -45,8 +45,8 @@ contract Gate is Ownable {
 
     mapping(bytes32 => Swap) swaps;
 
-    constructor() {
-
+    constructor(address _oracle) {
+        oracle = _oracle;
     }
 
     modifier futureEndtime(uint256 endtime) {

@@ -1,159 +1,97 @@
-const { AeSdk, MemoryAccount, Node } = require('@aeternity/aepp-sdk');
-const aeToken = require('./contracts/ae_token.json');
-const aeHtlc = require('./contracts/ae_htlc.json');
-const ethToken = require('./contracts/USDT.json');
-const ethHtlc = require('./contracts/HTLC_ERC20.json');
-var Buffer = require('buffer').Buffer;
-
 const HDWalletProvider = require("@truffle/hdwallet-provider");
-const Web3 = require("web3");
-const contract = require("@truffle/contract");
+// const contract = require("@truffle/contract");
+// const Contract = require('web3-eth-contract');
+const ethGate = require('./contracts/gate.json');
+
+const Web3 = require('web3');
+
 
 const dotenv = require('dotenv')
-
 dotenv.config();
-const SECRET_KEY = process.env["SECRET_KEY"];
-const ADDRESS = process.env["ADDRESS"];
-const MNEMONIC = process.env["MNEMONIC"];
-const INFURA_ACCESS_TOKEN = process.env["INFURA_ACCESS_TOKEN"];
-const NETWOKR_ID = 5;
-const TOKEN_ADDRESS = "0x276f88594C58A6132bEAa9787cFeAa498BC0F153";
-const HTLC_ADDRESS = "0x8B40585912E2375D1d7CF2c23bA736736DeE794D";
-let provider = new HDWalletProvider(MNEMONIC, `https://goerli.infura.io/v3/${INFURA_ACCESS_TOKEN}`);
-const SELF_ADDRESS = provider.addresses[0];
 
 
+const ETH_MNEMONIC : string = process.env["ETH_MNEMONIC"] || "";
+const ETH_NETWOKR_ID : string = process.env["ETH_NETWORK_ID"] || "";
+const INFURA_ACCESS_TOKEN : string = process.env["INFURA_ACCESS_TOKEN"] || "";
+const providerUrl : string = process.env["PROVIDER_URL"] || "";
 
-const NODE_URL = 'https://testnet.aeternity.io'
-const COMPILER_URL = 'https://compiler.aepps.com' // required for contract interactions
-const senderAccount = new MemoryAccount({
-  keypair: {
-    publicKey: ADDRESS,
-    secretKey: SECRET_KEY
-  }
+let ethProvider = new HDWalletProvider({
+  mnemonic: ETH_MNEMONIC,
+  providerOrUrl: providerUrl
 });
+const ETH_SELF_ADDRESS = ethProvider.addresses[0];
 
-
-let HEX_RUNNED : string[] = [];
+const web3 = new Web3(providerUrl);
+const web3Signer = new Web3(ethProvider);
+const gateContract = new web3.eth.Contract(ethGate.abi, ethGate.networks[ETH_NETWOKR_ID].address);
+const gateContractSigner = new web3Signer.eth.Contract(ethGate.abi, ethGate.networks[ETH_NETWOKR_ID].address);
 
 
 const main = async () => {
-  const nodeInstance = new Node(NODE_URL)
-  const aeSdk = new AeSdk({
-    compilerUrl: COMPILER_URL,
-    nodes: [{ name: 'testnet', instance: nodeInstance }],
-    accounts: [senderAccount],
-  })
+  console.log(`Started eth ${ETH_SELF_ADDRESS}`);
 
-  const token_contract = await aeSdk.getContractInstance({ aci: aeToken["aci"], contractAddress: aeToken["address"] });
-  const htlc_contract = await aeSdk.getContractInstance({ aci: aeHtlc["aci"], contractAddress: aeHtlc["address"] });
+  // const ethHGateContract = contract(ethGate);
+  // ethHGateContract.setProvider(ethProvider);
+  // ethHGateContract.hasNetwork(ETH_NETWOKR_ID);
+  // ethHGateContract.defaults({
+  //   from: ETH_SELF_ADDRESS,
+  //   gas: 4500000,
+  //   gasPrice: 10000000000
+  // });
+  // Contract.setProvider(ethProvider);
+  // console.log(`Contract address ${ethGate.networks[ETH_NETWOKR_ID].address}`);
+  // var contract = new Contract(ethGate.abi, ethGate.networks[ETH_NETWOKR_ID].address);
 
-  console.log(SELF_ADDRESS)
+  let options = {
+    filter: {
+        value: [],
+    },
+    fromBlock: 0
+  };
+  // contract.events.FundEvent(options)
+  //         .on('data', (event: any) => console.log(event))
+  //         .on('changed', (changed: any) => console.log(changed))
+  //         .on('error', (err: any) => console.log(err))
+  //         .on('connected', (str: any) => console.log(str))
 
-  const EthTokenContract = contract(ethToken);
-  EthTokenContract.setProvider(provider);
-  EthTokenContract.hasNetwork(NETWOKR_ID);
-  EthTokenContract.defaults({
-    from: SELF_ADDRESS,
-    gas: 4500000,
-    gasPrice: 10000000000
-  });
-
-  const EthHtlcContract = contract(ethHtlc);
-  EthHtlcContract.setProvider(provider);
-  EthHtlcContract.hasNetwork(NETWOKR_ID);
-  EthHtlcContract.defaults({
-    from: SELF_ADDRESS,
-    gas: 4500000,
-    gasPrice: 10000000000
-  });
-
-  const eth_token_contract = await EthTokenContract.at(TOKEN_ADDRESS);
-  const eth_htlc_contract = await EthHtlcContract.at(HTLC_ADDRESS);
-
-  // console.log()
-  // try {
-  //   // let result = await eth_token_contract.mint.call(address, 10000000000);
-  //   let result = await eth_token_contract.mint("0x8B40585912E2375D1d7CF2c23bA736736DeE794D", 10000000000);
-  //   console.log("Result", result);
-  //   provider.engine.stop();
-  // } catch (err) {
-  //   console.log("Error", err);
-  //   return;
-  // }
-
-  await processContracts(htlc_contract, token_contract, eth_htlc_contract, eth_token_contract);
-  setInterval(async () => {
-    await processContracts(htlc_contract, token_contract, eth_htlc_contract, eth_token_contract);
-  }, 30000);
-
-  // provider.engine.stop();
+  gateContract.events.FundEvent(options)
+          .on('data', onFundEvent)
+          .on('changed', (changed: any) => console.log(`Changed: ${changed}`))
+          .on('error', (err: any) => console.log(`Err: ${err}`))
+          .on('connected', (str: any) => console.log(`Connected: ${str}`))
 }
 
-const filterContracts = (contracts: any[]) : any[] => {
-  const result : any[] = [];
+async function onFundEvent(event: any) {
+  const swapId = event.returnValues.swapId;
 
-  contracts.forEach((contract, lock_id) => {
-    if (contract.token !== aeToken["address"]) {
-      return;
-    }
+  const swap = await gateContract.methods.getSwap(swapId).call();
+  const blockNumber = await web3.eth.getBlockNumber();
+  const block = await web3.eth.getBlock(blockNumber);
+  const timestamp = block["timestamp"] * 1000;
 
-    if (contract.withdrawd) {
-      return;
-    }
-
-    if (contract.refunded) {
-      return;
-    }
-
-    if (contract.endtime < new Date()) {
-      return
-    }
-
-    contract.lock_id = lock_id;
-    result.push(contract);
-  });
-
-  return result;
-}
-
-function pad(n: string, width: number, z = '0') {
-  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
-}
-
-function hexdump(buf: ArrayBuffer) {
-  let view = new Uint8Array(buf);
-  let hex = Array.from(view).map(v => pad(v.toString(16), 2));
-  return hex.join("");
-}
-
-const processLockContract = async (contracts: any[], htlc_token_contract: any) => {
-  let result;
-  for (let contract of contracts) {
-    let hex = hexdump(contract.lock_id);
-    if (HEX_RUNNED.indexOf(hex) !== -1) {
-      continue;
-    }
-    HEX_RUNNED.push(hex);
-
-    console.log(`Contract ${contract} ${hex}`);
-    try {
-      result = await htlc_token_contract.fund(TOKEN_ADDRESS, Buffer.from(contract.secret_hash), contract.eth_address, SELF_ADDRESS, contract.endtime, contract.amount);
-      let locked_contract_id = result.logs[0].args['0'];
-      console.log(`Lock contract id ${locked_contract_id}`);
-    } catch (err) {
-      console.log(err);
-    }
+  if (swap.withdrawn && swap.signature) {
+    console.log(`🔵 ${swapId} is finished`);
+  } else if (swap.refunded) {
+    console.log(`🔴 ${swapId} is refunded`)
+  } else if (swap.endtime < timestamp) {
+    console.log(`🔴 ${swapId} is expired`);
+  } else {
+    console.log(`🔵 ${swapId} is pending`);
+    singSwap(swapId);
   }
 }
 
-const processContracts = async (htlc_contract: any, token_contract: any, htlc_token_contract : any, eth_token_contract : any) => {
-  console.log("Processing contracts");
+async function getSignature(web3: any, account: string, swapId: string) : Promise<string> {
+  let message = swapId;
+  let hash = await web3.eth.personal.sign(message, account);
+  return hash;
+}
 
-  const result = await htlc_contract.methods.locked_contracts();
-  const filteredContracts = filterContracts(result.decodedResult);
-
-  await processLockContract(filteredContracts, htlc_token_contract)
+async function singSwap(swapId: string) {
+  const account = ETH_SELF_ADDRESS;
+  const signature = await getSignature(web3Signer, account, swapId);
+  const result = await gateContractSigner.methods.sign(swapId, signature).send({from: account});
+  console.log(result);
 }
 
 main();

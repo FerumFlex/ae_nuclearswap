@@ -37,7 +37,7 @@ export function Utils() {
     try {
       // @ts-ignore
 
-      const amount = ethers.utils.parseUnits("100.0", ethWallet.getPrecision());
+      const amount = ethers.utils.parseUnits("100.0", ethWallet.precision);
       try {
         let usdtContractWithSigner = getContract(library, chainId, usdtToken);
         if (! usdtContractWithSigner) {

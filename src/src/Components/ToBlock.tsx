@@ -2,11 +2,11 @@ import { Text, Paper, Group, NumberInput } from '@mantine/core';
 import { BigNumber } from 'ethers';
 
 
-export function ToBlock ({ fromValue, precision } : {fromValue: number, precision: number}) {
+export function ToBlock ({ fromValue, maxBalance, precision } : {fromValue: number, maxBalance: number | undefined, precision: number}) {
   return (
     <Paper withBorder radius={"lg"} shadow="lg" style={{padding: "10px", backgroundColor: "rgb(20, 21, 23)"}}>
       <Group position="apart" m={"xs"}>
-        <Text size={"xs"}><strong>Receive(estimated):</strong></Text>
+        <Text size={"xs"}><strong>Receive:</strong></Text>
         <Text size={"xs"}>&nbsp;</Text>
       </Group>
       <Group position="apart" m={"xs"}>
@@ -18,6 +18,7 @@ export function ToBlock ({ fromValue, precision } : {fromValue: number, precisio
           precision={precision}
         />
         <Text size={"sm"}>&nbsp;</Text>
+        <Text size={"sm"}>{maxBalance ? maxBalance.toString() : '-'}</Text>
       </Group>
     </Paper>
   )

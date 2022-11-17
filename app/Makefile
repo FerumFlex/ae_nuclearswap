@@ -1,2 +1,2 @@
 run:
-	ts-node run.ts
+	ENV=development ts-node run.ts

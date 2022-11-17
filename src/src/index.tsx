@@ -5,7 +5,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { BrowserRouter } from "react-router-dom";
 import store, { StoreContext } from './store';
-import { DAppProvider } from '@usedapp/core'
+import { DAppProvider } from '@usedapp/core';
 import { config } from './utils/Config';
 
 

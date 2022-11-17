@@ -99,7 +99,8 @@ export const Content = observer( () => {
 
         <ToBlock
           fromValue={convertedFromValue}
-          precision={wallets.fromWallet.precision}
+          precision={wallets.toWallet.precision}
+          maxBalance={wallets.toWallet.usdtBalanceFormat?.toNumber()}
         />
 
         <Center style={{paddingTop: "20px"}}>

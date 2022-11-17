@@ -8,7 +8,6 @@ import ethGate from '../contracts/Gate.json';
 import ethUsdt from '../contracts/USDT.json';
 import { getContract } from '../utils/utils';
 import { IconCheck, IconX } from '@tabler/icons';
-import {BigNumber} from 'bignumber.js';
 
 const Buffer = require('buffer').Buffer;
 const Web3 = require('web3');
@@ -151,6 +150,7 @@ export async function ethToAe(provider: any, chainId: number | undefined, aeWall
 
       let fund_event = result.events[1];
       let swapId = fund_event.args[0];
+      console.log(`Swap id ${swapId}`);
       let swap = await gateContractWithSigner.getSwap(swapId);
       console.log(swap);
     } catch (e: any) {
