@@ -72,7 +72,7 @@ async function singSwap(swapId: string) {
   const account = ETH_SELF_ADDRESS;
   const signature = await getSignature(web3Signer, account, swapId);
   const result = await gateContractSigner.methods.sign(swapId, signature).send({from: account});
-  console.log(result);
+  console.log(`🔵 ${swapId} was signed ${result.transactionHash}`)
 }
 
 main();

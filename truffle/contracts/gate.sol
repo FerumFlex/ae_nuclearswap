@@ -47,6 +47,16 @@ contract Gate is Ownable {
         bytes signature
     );
 
+    event NewBridge(
+        address fromToken,
+        string toToken
+    );
+
+    event RemoveBridge(
+        address fromToken,
+        string toToken
+    );
+
     address oracle;
 
     mapping(bytes32 => Swap) swaps;
@@ -269,6 +279,7 @@ contract Gate is Ownable {
         bytes32 bridgeId = getBridgeId(fromToken, toToken);
         if (haveBridge(bridgeId)) revert("this bridge already exists");
         bridges[bridgeId] = Bridge(fromToken, toToken);
+        emit NewBridge(fromToken, toToken);
     }
 
     function removeBridge(address fromToken, string memory toToken)
@@ -278,5 +289,6 @@ contract Gate is Ownable {
         bytes32 bridgeId = getBridgeId(fromToken, toToken);
         if (haveBridge(bridgeId) == false) revert("this bridge does not exist");
         delete bridges[bridgeId];
+        emit RemoveBridge(fromToken, toToken);
     }
 }
