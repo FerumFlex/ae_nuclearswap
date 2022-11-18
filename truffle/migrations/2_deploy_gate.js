@@ -3,7 +3,7 @@ const USDT = artifacts.require("USDT");
 
 const TO_TOKENS = {
   "development": "ct_2ZYrouBaMZDFxazjtxjqfib3R8zVV4yuHbRsrUfPywzQao4mjq",
-  "goerli": "",
+  "goerli": "ct_2ZYrouBaMZDFxazjtxjqfib3R8zVV4yuHbRsrUfPywzQao4mjq",
 }
 
 module.exports = async function (deployer, network) {
