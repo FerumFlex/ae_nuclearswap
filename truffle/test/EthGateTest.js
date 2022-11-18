@@ -19,6 +19,7 @@ contract("GATE", (accounts) => {
     gateInstance = await GATE.deployed();
     usdtInstance = await USDT.deployed();
 
+    await gateInstance.addBridge(usdtInstance.address, aeTokenAddress)
     await usdtInstance.approve(gateInstance.address, amount);
     balanceOriginal = await usdtInstance.balanceOf(accounts[0]);
 
@@ -87,6 +88,31 @@ contract("GATE", (accounts) => {
 
     result = await gateInstance.sign(swapId, signature);
     assert.equal(result.receipt.name, 'RuntimeError');
+  });
+
+  it("fund -> not supported bridge", async() => {
+    const unix = Math.round((+new Date() + wait_time) / 1000);
+    let result = await gateInstance.fund(usdtInstance.address, aeAddress, aeAddress, amount, ++nonce, unix);
+    assert.notEqual(result.receipt.stack.indexOf("revert this bridge does not exists"), -1, "Bridge should not exists");
+  });
+
+  it("add bridge -> remove bridge", async() => {
+    let bridgeId = await gateInstance.getBridgeId(usdtInstance.address, aeAddress);
+
+    let isExists = await gateInstance.haveBridge(bridgeId);
+    assert.equal(isExists, false);
+
+    let result = await gateInstance.addBridge(usdtInstance.address, aeAddress);
+    assert.equal(result.receipt.status, true, "Transaction should be success");
+
+    isExists = await gateInstance.haveBridge(bridgeId);
+    assert.equal(isExists, true);
+
+    result = await gateInstance.removeBridge(usdtInstance.address, aeAddress);
+    assert.equal(result.receipt.status, true, "Transaction should be success");
+
+    isExists = await gateInstance.haveBridge(bridgeId);
+    assert.equal(isExists, false);
   });
 
 });

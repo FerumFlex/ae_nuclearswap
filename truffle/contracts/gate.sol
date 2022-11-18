@@ -9,6 +9,11 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 contract Gate is Ownable {
     error SignatureInvalidV();
 
+    struct Bridge {
+        address fromToken;
+        string toToken;
+    }
+
     struct Swap {
         address fromToken;
         string toToken;
@@ -31,6 +36,7 @@ contract Gate is Ownable {
         uint256 amount,
         uint256 nonce
     );
+
     event FundCancelEvent(
         bytes32 indexed swapId
     );
@@ -44,6 +50,7 @@ contract Gate is Ownable {
     address oracle;
 
     mapping(bytes32 => Swap) swaps;
+    mapping(bytes32 => Bridge) bridges;
 
     constructor(address _oracle) {
         oracle = _oracle;
@@ -109,6 +116,9 @@ contract Gate is Ownable {
         futureEndtime(endtime)
         returns (bytes32 res)
     {
+        bytes32 bridgeId = getBridgeId(fromToken, toToken);
+        if (haveBridge(bridgeId) == false) revert("this bridge does not exists");
+
         bytes32 swapId = sha256(
             abi.encodePacked(
                 fromToken,
@@ -238,5 +248,35 @@ contract Gate is Ownable {
 
     function getOracle() public view returns(address oracleAddress) {
         return oracle;
+    }
+
+    // bridge
+    function getBridgeId(address fromToken, string memory toToken) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(
+            fromToken,
+            toToken
+        ));
+    }
+
+    function haveBridge(bytes32 bridgeId) public view returns (bool exists) {
+        exists = (bridges[bridgeId].fromToken != address(0));
+    }
+
+    function addBridge(address fromToken, string memory toToken)
+        external
+        onlyOwner
+    {
+        bytes32 bridgeId = getBridgeId(fromToken, toToken);
+        if (haveBridge(bridgeId)) revert("this bridge already exists");
+        bridges[bridgeId] = Bridge(fromToken, toToken);
+    }
+
+    function removeBridge(address fromToken, string memory toToken)
+        external
+        onlyOwner
+    {
+        bytes32 bridgeId = getBridgeId(fromToken, toToken);
+        if (haveBridge(bridgeId) == false) revert("this bridge does not exist");
+        delete bridges[bridgeId];
     }
 }
