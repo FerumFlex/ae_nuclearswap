@@ -10,7 +10,7 @@ require('dotenv').config();
 
 function createProvider() {
   const mnemonic = process.env["MNEMONIC"];
-  let provider = new HDWalletProvider(mnemonic, 'http://127.0.0.1:7545');
+  let provider = new HDWalletProvider(mnemonic, 'http://127.0.0.1:8545');
   return provider;
 }
 
@@ -30,6 +30,9 @@ describe('Gate', () => {
   let accounts;
   let oracle;
   let fakeOracle;
+  let nonce = 0;
+  let amount = 10000000;
+  const wait_time = 2000;
 
   before(async () => {
     provider = createProvider()
@@ -50,10 +53,11 @@ describe('Gate', () => {
     contractGate = await aeSdk.getContractInstance({ source: sourceGate, fileSystem: fileSystemGate });
     await contractGate.deploy([Buffer.from(oracle.substr(2), "hex")]);
 
-    await contractToken.methods.set_owner("ak_" + contractGate.deployInfo.address.substr(3));
-
     mainAddress = await utils.getDefaultAccounts()[0].address();
     secondAddress = await utils.getDefaultAccounts()[1].address();
+
+    await contractToken.methods.mint(mainAddress, amount * 100);
+    await contractToken.methods.set_owner("ak_" + contractGate.deployInfo.address.substr(3));
 
     // create a snapshot of the blockchain state
     await utils.createSnapshot(aeSdk);
@@ -63,11 +67,6 @@ describe('Gate', () => {
   afterEach(async () => {
     await utils.rollbackSnapshot(aeSdk);
     provider.engine.stop();
-  });
-
-  it("get initial balance", async () => {
-    const result = await contractToken.methods.balance(mainAddress);
-    assert.equal(result.decodedResult, undefined)
   });
 
   it("claim -> success", async() => {
@@ -160,5 +159,89 @@ describe('Gate', () => {
     } catch(error) {
       assert.equal(error.message, 'Invocation failed: "Swap_id is not valid"');
     }
+  });
+
+  it("fund -> sign", async() => {
+    let fromToken = contractToken.deployInfo.address;
+    let toToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
+    let recipient = "0x13cd6b3B1e9ccC18dC47E41785A613CA9725ccBC";
+    let amount = 10000000n;
+    let nonce = 1;
+    let initialBalance = (await contractToken.methods.balance(mainAddress)).decodedResult;
+
+    let result = await contractGate.methods.add_bridge(fromToken, toToken);
+    assert.equal(result.result.returnType, 'ok');
+
+    result = await contractToken.methods.create_allowance("ak_" + contractGate.deployInfo.address.substr(3), amount * 10n);
+    assert.equal(result.result.returnType, 'ok');
+
+    const unix = (+new Date() + wait_time);
+    result = await contractGate.methods.fund(fromToken, toToken, recipient, amount, ++nonce, unix);
+    assert.equal(result.result.returnType, 'ok');
+    assert.equal(result.decodedEvents[0].name, 'FundEvent');
+
+    const swapId = "0x" + Buffer.from(result.decodedResult).toString("hex");
+    console.log(`Swap id: ${swapId}`);
+
+    let balance = (await contractToken.methods.balance(mainAddress)).decodedResult;
+    assert.equal(balance + amount, initialBalance, "Should withdraw some funds");
+
+    let contractBalance = (await contractToken.methods.balance("ak_" + contractGate.deployInfo.address.substr(3))).decodedResult;
+    assert.equal(contractBalance, amount, "Contract should have funds");
+
+    let signature = await testUtils.getSignature(web3, oracle, swapId);
+    let convertedSignature = testUtils.ethSignatureToAe(signature);
+    result = await contractGate.methods.sign(swapId, convertedSignature);
+    assert.equal(result.result.returnType, 'ok');
+    assert.equal(result.decodedEvents[0].name, 'SwapSigned');
+
+    contractBalance = (await contractToken.methods.balance("ak_" + contractGate.deployInfo.address.substr(3))).decodedResult;
+    assert.equal(contractBalance, 0n, "Should burn amount");
+  });
+
+  it("fund -> cancel", async() => {
+    let fromToken = contractToken.deployInfo.address;
+    let toToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
+    let recipient = "0x13cd6b3B1e9ccC18dC47E41785A613CA9725ccBC";
+    let amount = 10000000n;
+    let nonce = 1;
+    let initialBalance = (await contractToken.methods.balance(mainAddress)).decodedResult;
+
+    let result = await contractGate.methods.add_bridge(fromToken, toToken);
+    assert.equal(result.result.returnType, 'ok');
+
+    result = await contractToken.methods.create_allowance("ak_" + contractGate.deployInfo.address.substr(3), amount * 10n);
+    assert.equal(result.result.returnType, 'ok');
+
+    const unix = (+new Date() + wait_time);
+    result = await contractGate.methods.fund(fromToken, toToken, recipient, amount, ++nonce, unix);
+
+    const swapId = "0x" + Buffer.from(result.decodedResult).toString("hex");
+    console.log(`Swap id: ${swapId}`);
+
+    let balance = (await contractToken.methods.balance(mainAddress)).decodedResult;
+    assert.equal(balance + amount, initialBalance, "Should withdraw some funds");
+
+    let contractBalance = (await contractToken.methods.balance("ak_" + contractGate.deployInfo.address.substr(3))).decodedResult;
+    assert.equal(contractBalance, amount, "Contract should have funds");
+
+    try {
+      await contractGate.methods.fund_cancel(swapId);
+      assert.equal(1, 0, "Should not get there");
+    } catch(error) {
+      assert.equal(error.message, 'Invocation failed: "refundable: endtime not yet passed"');
+    }
+
+    await testUtils.delay(wait_time);
+
+    // just mine transaction to increase timer
+    result = await contractToken.methods.change_allowance("ak_" + contractGate.deployInfo.address.substr(3), amount * 10n);
+    assert.equal(result.result.returnType, 'ok');
+
+    result = await contractGate.methods.fund_cancel(swapId);
+    assert.equal(result.result.returnType, 'ok');
+
+    balance = (await contractToken.methods.balance(mainAddress)).decodedResult;
+    assert.equal(balance, initialBalance, "Should matches balance as with revert changes");
   });
 });

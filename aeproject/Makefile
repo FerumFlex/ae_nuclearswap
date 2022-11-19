@@ -2,7 +2,7 @@ test:
 	aeproject test
 
 env:
-	aeproject env
+	aeproject env --nodeVersion v6.6.0
 
 deploy:
 	rm ../src/src/contracts/ae_token.json || true

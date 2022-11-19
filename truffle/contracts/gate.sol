@@ -41,7 +41,6 @@ contract Gate is Ownable {
         bytes32 indexed swapId
     );
 
-    event NewOracleEvent(address indexed oracle);
     event SwapSigned(
         bytes32 indexed swapId,
         bytes signature
@@ -56,6 +55,8 @@ contract Gate is Ownable {
         address fromToken,
         string toToken
     );
+
+    event NewOracleEvent(address indexed oracle);
 
     address oracle;
 

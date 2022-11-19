@@ -20,6 +20,7 @@
 
 @compiler >= 5
 
+include "Option.aes"
 include "String.aes"
 include "Pair.aes"
 
@@ -48,28 +49,81 @@ contract interface FungibleTokenInterface =
   stateful entrypoint transfer_allowance : (address, address, int)  => unit
   stateful entrypoint transfer           : (address, int)           => unit
   stateful entrypoint mint               : (address, int)           => unit
+  stateful entrypoint burn               : (int)                    => unit
 
 
 /// @title - Fungible token with all the extensions - burn, mint, allowances
 contract Gate =
+  record bridge =
+    { fromToken: address
+      , toToken: bytes(20)}
 
-  // This is a type alias for the balances map
+  record swap =
+    { fromToken: FungibleTokenInterface
+      , toToken: bytes(20)
+      , sender: address
+      , recipient: bytes(20)
+      , amount: int
+      , nonce: int
+      , endtime: int
+      , withdrawn: bool
+      , refunded: bool
+      , signature: option(bytes(65))}
+
+  datatype event =
+    FundEvent(hash, string)
+    | FundCancelEvent(hash)
+    | SwapSigned(hash, bytes(65))
+    | NewBridge(address, bytes(20))
+    | RemoveBridge(address, bytes(20))
+    | NewOracleEvent(bytes(20))
+
   type usedSwaps = map(hash, bool)
+  type swaps = map(hash, swap)
+  type bridges = map(hash, bridge)
 
   // This defines the state of type record encapsulating the contract's mutable state
   record state =
     { owner                : address
       , usedSwaps          : usedSwaps
+      , swaps              : swaps
+      , bridges            : bridges
       , oracle             : bytes(20) }
 
   entrypoint init(_oracle: bytes(20)) =
     { owner                 = Call.caller,
       usedSwaps             = {},
+      swaps                 = {},
+      bridges               = {},
       oracle                =  _oracle}
+
+  function future_endtime(endtime : int) =
+    require(endtime > Chain.timestamp, "endtime time must be in the future")
+
+  stateful function check_refundable(swapId: hash) =
+    if (state.swaps[swapId].sender != Call.caller)
+      abort("refundable: not sender")
+
+    if (state.swaps[swapId].refunded)
+      abort("refundable: already refunded")
+
+    if (state.swaps[swapId].withdrawn)
+      abort("refundable: already withdrawn")
+
+    if (state.swaps[swapId].endtime > Chain.timestamp)
+      abort("refundable: endtime not yet passed")
+
+  stateful function check_withdrawable(swapId: hash) =
+    if (state.swaps[swapId].withdrawn)
+      abort("withdrawable: already withdrawn")
+
+    if (state.swaps[swapId].refunded)
+      abort("withdrawable: already refunded")
 
   stateful entrypoint set_oracle(_oracle: bytes(20)) =
     require_owner()
     put(state{ oracle = _oracle })
+    Chain.event(NewOracleEvent(_oracle))
 
   stateful entrypoint get_oracle() : bytes(20) =
     state.oracle
@@ -84,6 +138,8 @@ contract Gate =
   stateful entrypoint claim(swapId: hash, fromToken: bytes(20), toToken: address, sender: bytes(20), recipient: address, amount: int, nonce: int, signature: bytes(65)) =
     require(Map.lookup_default(swapId, state.usedSwaps, false) == false, "Swap should not be used")
     let tokenContract : FungibleTokenInterface = Address.to_contract(toToken)
+
+    // get swap id
     let p = Bytes.concat(fromToken, Crypto.sha256(Address.to_str(toToken)))
     let p2 = Bytes.concat(p, sender)
     let p3 = Bytes.concat(p2, Crypto.sha256(Address.to_str(recipient)))
@@ -96,3 +152,94 @@ contract Gate =
 
     tokenContract.mint(recipient, amount)
     put(state{ usedSwaps[swapId] = true })
+
+  stateful entrypoint fund(fromToken: FungibleTokenInterface, toToken: bytes(20), recipient : bytes(20), amount: int, nonce: int, endtime: int) : hash =
+    future_endtime(endtime)
+
+    let bridge_id = get_bridge_id(fromToken, toToken)
+    if (!have_bridge(bridge_id))
+      abort("this bridge does not exists")
+    let sender = Call.caller
+
+    let p = Bytes.concat(Crypto.sha256(Address.to_str(fromToken.address)), toToken)
+    let p2 = Bytes.concat(p, Crypto.sha256(Address.to_str(sender)))
+    let p3 = Bytes.concat(p2, recipient)
+    let p4 = Bytes.concat(p3, Crypto.sha256(Int.to_str(amount)))
+    let p5 = Bytes.concat(p4, Crypto.sha256(Int.to_str(nonce)))
+    let swap_id = Crypto.sha256(p5)
+
+    if (have_swap(swap_id))
+      abort("this swap already exists")
+
+    fromToken.transfer_allowance(sender, Contract.address, amount)
+
+    put(state{ swaps[swap_id] = {
+        fromToken = fromToken,
+        toToken = toToken,
+        sender = sender,
+        recipient = recipient,
+        amount = amount,
+        nonce = nonce,
+        endtime = endtime,
+        withdrawn = false,
+        refunded = false,
+        signature = None}})
+
+    let parts = [Address.to_str(fromToken.address), " ", Bytes.to_str(toToken), " ", Address.to_str(sender), " ", Bytes.to_str(recipient), " ", Int.to_str(amount), " ", Int.to_str(nonce)]
+    Chain.event(FundEvent(swap_id, String.concats(parts)))
+    swap_id
+
+  stateful entrypoint fund_cancel(swapId: hash) =
+    if (!have_swap(swapId))
+      abort("this swap does not exist")
+
+    check_refundable(swapId)
+
+    put(state{ swaps[swapId].refunded = true })
+    state.swaps[swapId].fromToken.transfer(state.swaps[swapId].sender, state.swaps[swapId].amount)
+
+    Chain.event(FundCancelEvent(swapId))
+
+  stateful entrypoint sign(swapId: hash, signature: bytes(65)) =
+    if (!have_swap(swapId))
+      abort("this swap does not exist")
+
+    check_withdrawable(swapId)
+
+    require(Crypto.ecverify_secp256k1(get_unsigned_msg(swapId), state.oracle, signature), "Signature is not valid")
+
+    put(state{ swaps[swapId].signature = Some(signature), swaps[swapId].withdrawn = true})
+    state.swaps[swapId].fromToken.burn(state.swaps[swapId].amount)
+
+    Chain.event(SwapSigned(swapId, signature))
+
+  entrypoint get_swap(swap_id: hash) : option(swap) =
+    Map.lookup(swap_id, state.swaps)
+
+  entrypoint have_swap(swap_id: hash) : bool =
+    Map.member(swap_id, state.swaps)
+
+  // bridge
+  stateful entrypoint get_bridge_id(fromToken: FungibleTokenInterface, toToken: bytes(20)) : hash =
+    Crypto.sha256(Bytes.concat(Crypto.sha256(fromToken.address), toToken))
+
+  stateful entrypoint have_bridge(bridge_id: hash) : bool =
+    Map.member(bridge_id, state.bridges)
+
+  stateful entrypoint add_bridge(fromToken: FungibleTokenInterface, toToken: bytes(20)) =
+    require_owner()
+    let bridge_id = get_bridge_id(fromToken, toToken)
+    if (have_bridge(bridge_id))
+      abort("this bridge already exists")
+
+    put(state{ bridges[bridge_id] = {fromToken = fromToken.address, toToken = toToken} })
+    Chain.event(NewBridge(fromToken.address, toToken))
+
+  stateful entrypoint remove_bridge(fromToken: FungibleTokenInterface, toToken: bytes(20)) =
+    require_owner()
+    let bridge_id = get_bridge_id(fromToken, toToken)
+    if (!have_bridge(bridge_id) == false)
+      abort("this bridge does not exist")
+
+    put(state{ bridges = Map.delete(bridge_id, state.bridges) })
+    Chain.event(RemoveBridge(fromToken.address, toToken))
