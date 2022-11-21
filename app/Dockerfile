@@ -14,5 +14,3 @@ RUN  \
 USER app
 
 COPY . /app
-
-CMD ["ts-node", "run.ts"]
