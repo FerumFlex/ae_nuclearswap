@@ -53,7 +53,7 @@ export const Content = observer( () => {
     }
 
     if (wallets.fromWallet.info.symbol === "AE") {
-      aeToEth(aeWallet, ethWallet, contracts, fromValue, setIsLoading, setCurrentAction);
+      aeToEth(library, chainId, aeWallet, ethWallet, contracts, fromValue, setIsLoading, setCurrentAction);
     } else if (wallets.fromWallet.info.symbol === "ETH") {
       ethToAe(library, chainId, aeWallet, ethWallet, contracts, fromValue, setIsLoading, setCurrentAction);
     }

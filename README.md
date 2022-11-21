@@ -40,6 +40,31 @@ cd src
 npm start
 ```
 
-# deploy truffle contracts
+# Flow to deploy contracts and link them
 
-TBD:
+1. Deploy ae
+```
+cd aeproject
+make deploy
+make copy
+```
+
+2. Set ae owner. Copy ae gate contract to params for set_owner (aeproject/Makefile). Change ct_ to ak_
+```
+make set_owner
+```
+
+3. Copy ae token address to truffle (truffle/migrations/2_deploy_gate.js)
+
+4. Deploy truffle
+```
+cd truffle
+make deploy
+make copy
+```
+
+5. Copy eth token address to ae (aeproject/Makefile) and run
+```
+cd aeproject
+make add_bridge
+```
