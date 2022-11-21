@@ -13,8 +13,11 @@ deploy:
 set_owner:
 	aecli contract call local.wallet set_owner '["ak_M4yd3Zh1W2WTqNrByT6pqFeu5kmkQXvFrDkBjhL1CbpTJ5Zxx"]' --contractSource contracts/FungibleTokenFull.aes --descrPath ../src/src/contracts/ae_token.json
 
-add_bridge:
+add_bridge_dev:
 	aecli contract call local.wallet add_bridge '["ct_2HarwDyhRXXo1fqy6joNu4RePWsDb55gBKzvMpusBHc24hEp9C", "0x9B874b6AEf778868C109a845342269989CC165B1"]' --contractSource contracts/Gate.aes --descrPath ../src/src/contracts/ae_gate.json
+
+add_bridge_goerli:
+	aecli contract call local.wallet add_bridge '["ct_2HarwDyhRXXo1fqy6joNu4RePWsDb55gBKzvMpusBHc24hEp9C", "0x3684513152C4b4b3a1341Ba584B5A8c39a88f0b7"]' --contractSource contracts/Gate.aes --descrPath ../src/src/contracts/ae_gate.json
 
 copy:
 	rm ../app/contracts/ae_token.json || true

@@ -57,7 +57,7 @@ module.exports = {
       },
       network_id: 5,
       gas: 4500000,
-      gasPrice: 10000000000,
+      gasPrice: 4000000000,
     }
     //
     // An additional network, but with some advanced options…

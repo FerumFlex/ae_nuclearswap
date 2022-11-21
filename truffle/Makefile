@@ -2,7 +2,7 @@ deploy:
 	truffle deploy
 
 deploy-goerli:
-	truffle migrate --network goerli --reset
+	truffle migrate --network goerli
 
 deploy-dev:
 	truffle migrate --network development --reset

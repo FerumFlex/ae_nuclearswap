@@ -4,6 +4,7 @@ const USDT = artifacts.require("USDT");
 const TO_TOKENS = {
   "development": "ct_2HarwDyhRXXo1fqy6joNu4RePWsDb55gBKzvMpusBHc24hEp9C",
   "goerli": "ct_2HarwDyhRXXo1fqy6joNu4RePWsDb55gBKzvMpusBHc24hEp9C",
+  "goerli-fork": "ct_2HarwDyhRXXo1fqy6joNu4RePWsDb55gBKzvMpusBHc24hEp9C",
 }
 
 module.exports = async function (deployer, network) {
