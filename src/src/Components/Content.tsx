@@ -28,7 +28,7 @@ export const Content = observer( () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [fromValue, setFromValue] = useState(10n * 10n ** BigInt(wallets.fromWallet.precision));
+  const [fromValue, setFromValue] = useState(10n * 10n ** 6n);
   const [currentAction, setCurrentAction] = useState<number | null>(null);
   const { classes } = useStyles();
   const { chainId, library } = useEthers();
