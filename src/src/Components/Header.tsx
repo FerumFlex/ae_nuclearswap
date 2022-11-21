@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { createStyles, Header, Grid, Burger, Paper, Transition, Anchor, useMantineColorScheme, ActionIcon } from '@mantine/core';
+import { createStyles, Header, Grid, Burger, Paper, Transition, Anchor } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Logo } from './Logo';
 import { Link } from 'react-router-dom';
-import { IconSun, IconMoonStars } from '@tabler/icons';
 import { AeWallet } from './AeWallet';
 import { EthWallet } from './EthWallet';
 import { useEffect } from 'react';
@@ -80,7 +79,7 @@ interface HeaderResponsiveProps {
 }
 
 export function HeaderResponsive({links }: HeaderResponsiveProps) {
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  // const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const [opened, { toggle }] = useDisclosure(false);
   const { classes, cx } = useStyles();
   const [activeLink, setActiveLink] = useState(links[0].link);

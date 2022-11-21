@@ -1,5 +1,4 @@
 import { Text, Paper, Group, NumberInput } from '@mantine/core';
-import { BigNumber } from 'ethers';
 
 
 export function ToBlock ({ fromValue, maxBalance, precision } : {fromValue: number, maxBalance: number | undefined, precision: number}) {
