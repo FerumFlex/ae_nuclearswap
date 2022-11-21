@@ -59,7 +59,7 @@ make set_owner
 4. Deploy truffle
 ```
 cd truffle
-make deploy
+make deploy-dev
 make copy
 ```
 

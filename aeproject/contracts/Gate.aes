@@ -219,6 +219,9 @@ contract Gate =
   entrypoint have_swap(swap_id: hash) : bool =
     Map.member(swap_id, state.swaps)
 
+  entrypoint swaps() : swaps =
+    state.swaps
+
   // bridge
   stateful entrypoint get_bridge_id(fromToken: FungibleTokenInterface, toToken: bytes(20)) : hash =
     Crypto.sha256(Bytes.concat(Crypto.sha256(fromToken.address), toToken))

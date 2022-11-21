@@ -2,8 +2,8 @@ const GATE = artifacts.require("Gate");
 const USDT = artifacts.require("USDT");
 
 const TO_TOKENS = {
-  "development": "ct_2tADAnX2QvfhjW4xEJUUHicayMX464SEfdm2tKLoWYPGvdK5hd",
-  "goerli": "ct_2tADAnX2QvfhjW4xEJUUHicayMX464SEfdm2tKLoWYPGvdK5hd",
+  "development": "ct_sTEXpvPxkTgeaNFxQBzmsT1GKjWHqyJmiWFCpHgB8hyVrT15L",
+  "goerli": "ct_sTEXpvPxkTgeaNFxQBzmsT1GKjWHqyJmiWFCpHgB8hyVrT15L",
 }
 
 module.exports = async function (deployer, network) {
