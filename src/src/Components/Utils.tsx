@@ -37,7 +37,7 @@ export function Utils() {
     try {
       // @ts-ignore
 
-      const amount = ethers.utils.parseUnits("100.0", ethWallet.precision);
+      const amount = ethers.utils.parseUnits("1000.0", ethWallet.precision);
       try {
         let usdtContractWithSigner = getContract(library, chainId, usdtToken);
         if (! usdtContractWithSigner) {
@@ -55,7 +55,7 @@ export function Utils() {
         showNotification({
           title: 'Success',
           color: 'teal',
-          message: 'Minted 100 USDT on eth',
+          message: 'Minted 1000 USDT on eth',
           icon: <IconCheck size={16} />,
         })
       } catch(Error) {

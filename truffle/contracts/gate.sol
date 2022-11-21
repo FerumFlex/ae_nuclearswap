@@ -45,6 +45,7 @@ contract Gate is Ownable {
         bytes32 indexed swapId,
         bytes signature
     );
+    event SwapClaimed(bytes32 indexed swapId);
 
     event NewBridge(
         address fromToken,
@@ -62,6 +63,7 @@ contract Gate is Ownable {
 
     mapping(bytes32 => Swap) swaps;
     mapping(bytes32 => Bridge) bridges;
+    mapping(bytes32 => bool) usedSwaps;
 
     constructor(address _oracle) {
         oracle = _oracle;
@@ -291,5 +293,47 @@ contract Gate is Ownable {
         if (haveBridge(bridgeId) == false) revert("this bridge does not exist");
         delete bridges[bridgeId];
         emit RemoveBridge(fromToken, toToken);
+    }
+
+    function claim(
+        bytes32 swapId,
+        string memory fromToken,
+        address toToken,
+        string memory sender,
+        address recipient,
+        uint256 amount,
+        uint256 nonce,
+        bytes memory signature
+    )
+        external
+    {
+        if (usedSwaps[swapId]) {
+            revert("Swap should not be used");
+        }
+
+        bytes32 correctSwapId = sha256(
+            abi.encodePacked(
+                sha256(abi.encodePacked(fromToken)),
+                toToken,
+                sha256(abi.encodePacked(sender)),
+                recipient,
+                sha256(abi.encodePacked(Strings.toString(amount))),
+                sha256(abi.encodePacked(Strings.toString(nonce)))
+            )
+        );
+
+        require(correctSwapId == swapId, "Swap_id is not valid");
+
+        (bytes32 r, bytes32 s, uint8 v) = parseSignature(signature);
+
+        if (ecrecover(getUnsignedMsg(swapId), v, r, s) != oracle) {
+            revert SignatureInvalidV();
+        }
+
+        if (!IERC20(toToken).transfer(recipient, amount))
+            revert("transfer sender to this failed");
+
+        usedSwaps[swapId] = true;
+        emit SwapClaimed(swapId);
     }
 }

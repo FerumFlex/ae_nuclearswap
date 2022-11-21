@@ -2,9 +2,7 @@ const { AeSdk, MemoryAccount, Node } = require("@aeternity/aepp-sdk");
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const ethGate = require("./contracts/gate.json");
 const aeGate = require("./contracts/ae_gate.json");
-const aeToken = require("./contracts/ae_token.json");
 const axios = require("axios");
-var Buffer = require('buffer').Buffer;
 
 const Web3 = require("web3");
 
@@ -17,6 +15,8 @@ const INFURA_ACCESS_TOKEN: string = process.env["INFURA_ACCESS_TOKEN"] || "";
 const providerUrl: string = process.env["PROVIDER_URL"] || "";
 const AE_SECRET_KEY = process.env["AE_SECRET_KEY"];
 const AE_ADDRESS = process.env["AE_ADDRESS"];
+const AE_EVENT_HASH =
+  "AMIODPM6EJSAKUT025Q4B0MA5DCDGGVADRNMBB645OHO4HEIR9SG====";
 const AE_NETWORK = process.env["AE_NETWORK"] || "testnet";
 
 let ethProvider = new HDWalletProvider({
@@ -45,7 +45,6 @@ const aeAccount = {
 const senderAccount = new MemoryAccount({
   keypair: aeAccount,
 });
-let HEX_RUNNED : string[] = [];
 
 const main = async () => {
   const nodeInstance = new Node(NODE_URL)
@@ -59,19 +58,69 @@ const main = async () => {
   const gateContract = await aeSdk.getContractInstance({ aci: aeGate["aci"], contractAddress: aeGate["address"] });
 
   console.log(`Started ae ${AE_ADDRESS}`);
-  await processContracts(gateContract);
+  await procesAe(gateContract);
+
   setInterval(async () => {
-    await processContracts(gateContract);
-  }, 15000);
-}
+    await procesAe(gateContract);
+  }, 30000);
+};
+
+const procesAe = async (gateContract: any) => {
+  let swapIds = await fetchAeEvents();
+  for (let swapId of swapIds) {
+    await processSwap(gateContract, swapId);
+  }
+};
+
+const processSwap = async (gateContract: any, swapId: string) => {
+  let swap = (await gateContract.methods.get_swap(swapId)).decodedResult;
+  const timestamp = +new Date();
+
+  if (swap.withdrawn && swap.signature) {
+    console.log(`🔵 ${swapId} is finished`);
+  } else if (swap.refunded) {
+    console.log(`🔴 ${swapId} is refunded`)
+  } else if (swap.endtime < timestamp) {
+    console.log(`🔴 ${swapId} is expired`);
+  } else {
+    console.log(`🔵 ${swapId} is pending`);
+    singSwap(gateContract, swapId);
+  }
+};
 
 const singSwap = async (gateContract : any, swapId: string) => {
   const account = ETH_SELF_ADDRESS;
-  const signature = await getSignature(web3Signer, account, swapId)
-  const correctSignature = ethSignatureToAe(signature);
-  let res = await gateContract.methods.sign(swapId, correctSignature);
+  const signature = ethSignatureToAe(await getSignature(web3Signer, account, swapId));
+  let res = await gateContract.methods.sign(swapId, signature);
   console.log(`🔵 ${swapId} was signed ${res.hash}`)
 }
+
+function intToHex(value : bigint) : string {
+  let res = new Uint8Array(32);
+  let index = 0;
+  while (value > 256n) {
+    res[index++] = Number(value % 256n);
+    value = value / 256n;
+  }
+  res[index] = Number(value);
+  res.reverse();
+  return "0x" + Buffer.from(res).toString("hex");
+}
+
+const fetchAeEvents = async () : Promise<string[]> => {
+  const res = await axios.get(
+    `https://${AE_NETWORK}.aeternity.io/mdw/v2/contracts/logs?direction=backward&contract_id=${aeGate.address}`
+  );
+  let fundSwapIds : string[] = [];
+  res.data.data.forEach((e: any) => {
+    if (e.event_hash === AE_EVENT_HASH) {
+      let swapId = intToHex(BigInt(e.args[0]));
+      fundSwapIds.push(swapId);
+    }
+  });
+
+  return fundSwapIds;
+};
 
 async function getSignature(web3: any, account: string, swapId: string) : Promise<any> {
   let message = swapId;
@@ -84,59 +133,6 @@ function ethSignatureToAe(signature: string) : any {
   let v = sigBytes.slice(-1);
   let convertedSignature = Buffer.concat([v, sigBytes.slice(0, -1)]);
   return convertedSignature;
-}
-
-const filterContracts = (contracts: any[]) : any[] => {
-  const result : any[] = [];
-
-  contracts.forEach((contract, swapId) => {
-    if (contract.fromToken !== aeToken["address"]) {
-      return;
-    }
-
-    if (contract.withdrawd) {
-      return;
-    }
-
-    if (contract.refunded) {
-      return;
-    }
-
-    if (contract.endtime < new Date()) {
-      return
-    }
-
-    contract.swapId = swapId;
-    result.push(contract);
-  });
-
-  return result;
-}
-
-const processLockContract = async (contracts: any[], gateContract: any) => {
-  for (let contract of contracts) {
-    let swapId = "0x" + Buffer.from(contract.swapId).toString("hex");
-    if (HEX_RUNNED.indexOf(swapId) !== -1) {
-      continue;
-    }
-    HEX_RUNNED.push(swapId);
-
-    console.log(`Contract ${contract} ${swapId}`);
-    try {
-      await singSwap(gateContract, swapId);
-    } catch (err) {
-      console.log(err);
-    }
-  }
-}
-
-const processContracts = async (gateContract: any) => {
-  console.log("Processing contracts");
-
-  const result = await gateContract.methods.swaps();
-  const filteredContracts = filterContracts(result.decodedResult);
-
-  await processLockContract(filteredContracts, gateContract)
 }
 
 main();

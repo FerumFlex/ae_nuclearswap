@@ -13,6 +13,17 @@ const Buffer = require('buffer').Buffer;
 export async function aeToEth(provider: any, chainId: number | undefined, aeWallet: any, ethWallet: any, contracts: any, amount: bigint, setIsLoading: any, setCurrentAction: any) {
   setIsLoading(true);
   try {
+    let gateContractWithSigner = getContract(provider, chainId, ethGate);
+    if (! gateContractWithSigner) {
+      showNotification({
+        color: 'red',
+        title: 'Error',
+        message: 'Gate contract is not uploaded for this network',
+        icon: <IconX size={16} />,
+      });
+      return;
+    }
+
     let usdtAddressWithSigner = getContract(provider, chainId, ethUsdt);
     if (! usdtAddressWithSigner) {
       showNotification({
@@ -38,50 +49,96 @@ export async function aeToEth(provider: any, chainId: number | undefined, aeWall
     }
 
     setCurrentAction(1);
-    const endtime = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
-    const nonce = +new Date();
-    result = await aeWallet.gateContract.methods.fund(
-        aeToken.address,
-        usdtAddressWithSigner.address,
-        ethWallet.address,
-        amount,
-        nonce,
-        endtime
-    );
-    const swap_id = result.decodedResult;
-    console.log("swap id ", swap_id);
-    console.log("swap id ", Buffer.from(swap_id).toString("hex"));
+    try {
+      const endtime = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
+      const nonce = +new Date();
+      result = await aeWallet.gateContract.methods.fund(
+          aeToken.address,
+          Buffer.from(usdtAddressWithSigner.address.substr(2), "hex"),
+          Buffer.from(ethWallet.address.substr(2), "hex"),
+          amount,
+          nonce,
+          endtime
+      );
+      const swapId = "0x" + Buffer.from(result.decodedResult).toString("hex");
+      console.log("swap id ", swapId);
 
-    setCurrentAction(2);
+      setCurrentAction(2);
 
-    let time_to_wait = 120;
-    while (true) {
-      let swap = await aeWallet.gateContract.methods.get_swap(swap_id);
-      if (swap.signature) {
-        setCurrentAction(3);
-        alert(123);
-        return;
+      let time_to_wait = 10 * 60;
+      while (true) {
+        result = await aeWallet.gateContract.methods.get_swap(swapId);
+        let swap = result.decodedResult;
+        if (swap.signature) {
+          setCurrentAction(3);
+          console.log(
+            swapId,
+            "ak" + aeToken.address.substr(2),
+            usdtAddressWithSigner.address,
+            aeWallet.address,
+            ethWallet.address,
+            amount,
+            nonce,
+            convertAeSignatureToEth("0x" + Buffer.from(swap.signature).toString("hex"))
+          );
+
+          let tx = await gateContractWithSigner.claim(
+            swapId,
+            "ak" + aeToken.address.substr(2),
+            usdtAddressWithSigner.address,
+            aeWallet.address,
+            ethWallet.address,
+            amount,
+            nonce,
+            convertAeSignatureToEth("0x" + Buffer.from(swap.signature).toString("hex"))
+          );
+          let result = await tx.wait();
+          console.log(result);
+
+          showNotification({
+            color: 'teal',
+            title: 'Success',
+            message: 'You have claimed tokens',
+            icon: <IconCheck size={16} />,
+          });
+          return;
+        }
+        await delay(5000);
+
+        time_to_wait -= 5;
+        if (time_to_wait <= 0) {
+          showNotification({
+            color: 'red',
+            title: 'Error',
+            message: 'Can not finish exchange',
+          });
+          break;
+        }
       }
-      await delay(5000);
-
-      time_to_wait -= 5;
-      if (time_to_wait <= 0) {
-        showNotification({
-          color: 'red',
-          title: 'Error',
-          message: 'Can not finish exchange',
-        });
-        break;
-      }
-
+    } catch (e: any) {
+      console.log(e);
+      showNotification({
+        color: 'red',
+        title: 'Error',
+        message: e.reason,
+        icon: <IconX size={16} />,
+      });
     }
-
   } finally {
     setIsLoading(false);
     setCurrentAction(null);
   }
 }
 
+function convertAeSignatureToEth(signature: string) : string {
+  let sigBytes = Buffer.from(signature.substr(2), "hex");
+  let v = sigBytes.slice(0, 1)
+  let convertedSignature = Buffer.concat([
+    sigBytes.slice(1),
+    v
+  ]);
+  return convertedSignature;
+}
 
 function waitForSigned(gateContractWithSigner: any, swapId: string) : Promise<string> {
   return new Promise<string>((resolve, reject) => {

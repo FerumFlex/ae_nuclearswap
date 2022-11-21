@@ -5,7 +5,6 @@ const USDT = artifacts.require("USDT");
 
 contract("GATE", (accounts) => {
   let usdtInstance;
-  let balanceOriginal;
   let gateInstance;
   const amount = web3.utils.toBN(10 * 10 ** 6);
   const aeTokenAddress = "ak_2FYNeoVoxz2jCvaautM12HtuhXoRbA3ZtjfCtX98AaqpAK4rzM";
@@ -115,4 +114,48 @@ contract("GATE", (accounts) => {
     assert.equal(isExists, false);
   });
 
+  it("claim", async() => {
+    let fromToken = aeTokenAddress;
+    let toToken = usdtInstance.address;
+    let sender = aeAddress;
+    let recipient = accounts[1];
+    let amount = 10000000;
+    let nonce = 1;
+
+    let swapId = utils.getSwapIdAe(
+      web3,
+      fromToken,
+      toToken,
+      sender,
+      recipient,
+      amount,
+      nonce,
+    );
+
+    let balance = await usdtInstance.balanceOf(recipient);
+    assert.equal(balance.toString(), "0")
+
+    let result = await usdtInstance.transfer(gateInstance.address, amount);
+    assert.equal(result.logs[0].event, 'Transfer');
+
+    balance = await usdtInstance.balanceOf(gateInstance.address);
+    assert.equal(balance.toString(), amount.toString());
+
+    let message = swapId;
+    let signature = await utils.getSignature(web3, accounts[1], message);
+    result = await gateInstance.claim(
+      swapId,
+      fromToken,
+      toToken,
+      sender,
+      recipient,
+      amount,
+      nonce,
+      signature
+    );
+    assert.equal(result.logs[0].event, 'SwapClaimed');
+
+    balance = await usdtInstance.balanceOf(recipient);
+    assert.equal(balance.toString(), amount.toString())
+  });
 });

@@ -11,10 +11,10 @@ deploy:
 	aecli contract deploy local.wallet '["0x9a63911a6495d76b36a94025c16847e4e6236b7a"]' --contractSource contracts/Gate.aes --descrPath ../src/src/contracts/ae_gate.json
 
 set_owner:
-	aecli contract call local.wallet set_owner '["ak_2e5gVCi2NEjP1maCcRGF7MGHWLNiX6v6mLxAAeNGCE5z1bpu1G"]' --contractSource contracts/FungibleTokenFull.aes --descrPath ../src/src/contracts/ae_token.json
+	aecli contract call local.wallet set_owner '["ak_M4yd3Zh1W2WTqNrByT6pqFeu5kmkQXvFrDkBjhL1CbpTJ5Zxx"]' --contractSource contracts/FungibleTokenFull.aes --descrPath ../src/src/contracts/ae_token.json
 
 add_bridge:
-	aecli contract call local.wallet add_bridge '["ct_sTEXpvPxkTgeaNFxQBzmsT1GKjWHqyJmiWFCpHgB8hyVrT15L", "0x3D3794EA171F35951a69257C2fb863bb712033b2"]' --contractSource contracts/Gate.aes --descrPath ../src/src/contracts/ae_gate.json
+	aecli contract call local.wallet add_bridge '["ct_2HarwDyhRXXo1fqy6joNu4RePWsDb55gBKzvMpusBHc24hEp9C", "0x9B874b6AEf778868C109a845342269989CC165B1"]' --contractSource contracts/Gate.aes --descrPath ../src/src/contracts/ae_gate.json
 
 copy:
 	rm ../app/contracts/ae_token.json || true

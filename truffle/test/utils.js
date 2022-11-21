@@ -35,6 +35,21 @@ function getSwapId(web3, fromToken, toToken, sender, recipient, amount, nonce) {
   return result;
 }
 
+function getSwapIdAe(web3, fromToken, toToken, sender, recipient, amount, nonce) {
+  let result = sha256hash(
+    encodePacked(
+      web3,
+      {value: sha256hash(encodePacked(web3, {value: fromToken, type: "string"})), type: "bytes32"},
+      {value: toToken, type: "address"},
+      {value: sha256hash(encodePacked(web3, {value: sender, type: "string"})), type: "bytes32"},
+      {value: recipient, type: "address"},
+      {value: sha256hash(encodePacked(web3, {value: amount.toString(), type: "string"})), type: "bytes32"},
+      {value: sha256hash(encodePacked(web3, {value: nonce.toString(), type: "string"})), type: "bytes32"}
+    )
+  );
+  return result;
+}
+
 async function getSignature(web3, account, swapId) {
   let message = swapId;
   let hash = await web3.eth.personal.sign(message, account);
@@ -47,5 +62,6 @@ module.exports = {
   sha256,
   encodePacked,
   getSwapId,
+  getSwapIdAe,
   getSignature
 };
