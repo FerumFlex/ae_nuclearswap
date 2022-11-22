@@ -1,4 +1,4 @@
-import { Text, ThemeIcon, createStyles, Grid, Badge, Anchor } from '@mantine/core';
+import { ThemeIcon, createStyles, Grid, Badge, Anchor } from '@mantine/core';
 import { ReportMoney } from 'tabler-icons-react';
 import { Link } from 'react-router-dom';
 

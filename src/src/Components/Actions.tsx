@@ -225,7 +225,7 @@ async function ethwaitForSigned(gateContractWithSigner: any, swapId: string) : P
   let time_to_wait = 20 * 60;
   while (true) {
     let swap = await gateContractWithSigner.getSwap(swapId);
-    if (swap.signature && swap.signature != "0x") {
+    if (swap.signature && swap.signature !== "0x") {
       return swap.signature;
     }
 
