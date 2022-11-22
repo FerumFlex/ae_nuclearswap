@@ -10,7 +10,6 @@ export const initSdk = async(aeWallet : AeWallet) => {
   if (aeWallet.aeSdk) {
     return aeWallet.aeSdk
   }
-  console.log(4444);
 
   let aeSdk = new AeSdkAepp({
     name: 'Simple æpp',
@@ -26,10 +25,9 @@ export const initSdk = async(aeWallet : AeWallet) => {
     onAddressChange: ({ current }) => console.log(current),
     onDisconnect: () => console.log('Aepp is disconnected')
   });
-  aeWallet.setSdk(aeSdk);
+  await aeWallet.setSdk(aeSdk);
 
   let [address, networkId] = await scanForWallet(aeSdk);
-
   await aeWallet.setParams(address, networkId);
 
   return aeSdk;
