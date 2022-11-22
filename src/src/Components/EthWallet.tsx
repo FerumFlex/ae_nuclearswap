@@ -31,6 +31,7 @@ export const EthWallet = observer(() => {
           {
             ethWallet.networkId ?
             <Anchor
+              title={ethWallet.address}
               target={"_blank"}
               href={ethWallet.explorerAddressLink}
             >ETH - {shortenAddress(ethWallet.address)}</Anchor> :

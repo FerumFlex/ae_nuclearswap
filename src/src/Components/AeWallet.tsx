@@ -19,6 +19,7 @@ export const AeWallet = observer(() => {
       {aeWallet.address ?
         <Badge>
           <Anchor
+            title={aeWallet.address}
             target={"_blank"}
             href={aeWallet.explorerAddressLink}
           >
