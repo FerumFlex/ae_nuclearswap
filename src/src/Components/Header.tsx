@@ -109,10 +109,10 @@ export function HeaderResponsive({links }: HeaderResponsiveProps) {
   return (
     <Header height={HEADER_HEIGHT} style={{backgroundColor: "unset"}} className={classes.root}>
       <Grid justify="center" align="center" className={classes.header}>
-        <Grid.Col span={1}>
+        <Grid.Col span={2}>
           <Logo />
         </Grid.Col>
-        <Grid.Col span={2}>
+        <Grid.Col span={1}>
           &nbsp;
         </Grid.Col>
         <Grid.Col span={6}>

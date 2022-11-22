@@ -1,5 +1,6 @@
-import { Text, ThemeIcon, createStyles, Grid } from '@mantine/core';
+import { Text, ThemeIcon, createStyles, Grid, Badge, Anchor } from '@mantine/core';
 import { ReportMoney } from 'tabler-icons-react';
+import { Link } from 'react-router-dom';
 
 
 const useStyles = createStyles((theme) => ({
@@ -17,7 +18,9 @@ export function Logo() {
       <ThemeIcon className={classes.logo}>
         <ReportMoney size={48} strokeWidth={2} />
       </ThemeIcon>
-      <Text weight={"bold"}>aeRENITY</Text>
+      <Anchor component={Link} to="/" weight={"bold"}>aeRENITY</Anchor>
+      &nbsp;
+      <Badge color="blue" size="xs">beta</Badge>
     </Grid>
   );
 }

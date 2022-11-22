@@ -34,6 +34,23 @@ export const Content = observer( () => {
   const { chainId, library } = useEthers();
 
   const doExchange = async () => {
+    if (aeWallet.networkId !== "ae_uat") {
+      showNotification({
+        color: 'red',
+        title: 'Error',
+        message: 'Aerenity in beta mode, works only with ae testnet',
+      });
+      return;
+    }
+
+    if (ethWallet.networkId !== "5") {
+      showNotification({
+        color: 'red',
+        title: 'Error',
+        message: 'Aerenity in beta mode, works only with goerli',
+      });
+      return;
+    }
     if (!aeWallet.address) {
       showNotification({
         color: 'red',

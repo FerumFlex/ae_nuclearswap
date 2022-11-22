@@ -4,12 +4,12 @@ import { shortenAddress } from '@usedapp/core'
 import { Button, Badge, Anchor } from '@mantine/core';
 import { useStore } from '../store';
 import { observer } from 'mobx-react-lite';
-import { useEthers } from '@usedapp/core'
+import { useEthers, Goerli } from '@usedapp/core'
 
 
 export const EthWallet = observer(() => {
   const {ethWallet} = useStore();
-  const { activateBrowserWallet, chainId } = useEthers();
+  const { activateBrowserWallet, switchNetwork } = useEthers();
 
   useEffect(() => {
     activateBrowserWallet();
@@ -19,16 +19,24 @@ export const EthWallet = observer(() => {
     activateBrowserWallet();
   };
 
+  const onSwitchNetwork = () => {
+    switchNetwork(Goerli.chainId);
+  };
+
   return (
     <span>
       {
-        ethWallet.address && chainId ?
+        ethWallet.address ?
         <Badge>
+          {
+            ethWallet.networkId ?
             <Anchor
               target={"_blank"}
               href={ethWallet.explorerAddressLink}
-            >ETH - {shortenAddress(ethWallet.address)}</Anchor>
-          </Badge> :
+            >ETH - {shortenAddress(ethWallet.address)}</Anchor> :
+            <Anchor onClick={onSwitchNetwork}>Switch to goerli.</Anchor>
+          }
+        </Badge> :
         <Button variant="light" compact onClick={onConnect}>ETH Connect</Button>
       }
     </span>
