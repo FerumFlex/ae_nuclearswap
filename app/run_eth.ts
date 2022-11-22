@@ -1,3 +1,6 @@
+import { createServer, IncomingMessage, ServerResponse } from 'http';
+
+const http = require("http");
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const ethGate = require('./contracts/gate.json');
 
@@ -12,6 +15,7 @@ const ETH_MNEMONIC : string = process.env["ETH_MNEMONIC"] || "";
 const ETH_NETWOKR_ID : string = process.env["ETH_NETWORK_ID"] || "";
 const INFURA_ACCESS_TOKEN : string = process.env["INFURA_ACCESS_TOKEN"] || "";
 const providerUrl : string = process.env["PROVIDER_URL"] || "";
+const PORT = process.env["PORT"] || "8080";
 
 let ethProvider = new HDWalletProvider({
   mnemonic: ETH_MNEMONIC,
@@ -75,4 +79,32 @@ async function singSwap(swapId: string) {
   console.log(`🔵 ${swapId} was signed ${result.transactionHash}`)
 }
 
+const server = createServer((request: IncomingMessage, response: ServerResponse) => {
+  switch (request.url) {
+    case '/health': {
+      let status;
+      if (web3.eth.net.isListening) {
+        status = true;
+      } else {
+        status = false;
+      }
+      response.end(JSON.stringify({
+        "status": status ? "ok" : "error"
+      }));
+      response.statusCode = status ? 200 : 500;
+      break;
+    }
+    default: {
+      response.statusCode = 404;
+      response.end();
+    }
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
+
 main();
+
+
