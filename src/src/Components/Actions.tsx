@@ -178,7 +178,7 @@ export async function ethToAe(provider: any, chainId: number | undefined, aeWall
       console.log(`signature ${signature}`);
 
       setCurrentAction(3);
-      result = await aeWallet.gateContract.methods.claim(
+      await aeWallet.gateContract.methods.claim(
         Buffer.from(swapId.substr(2), "hex"),
         Buffer.from(usdtAddressWithSigner.address.substr(2), "hex"),
         toToken,
@@ -188,7 +188,6 @@ export async function ethToAe(provider: any, chainId: number | undefined, aeWall
         nonce,
         ethSignatureToAe(signature),
       );
-      console.log(result);
 
       showNotification({
         color: 'teal',
@@ -226,8 +225,7 @@ async function ethwaitForSigned(gateContractWithSigner: any, swapId: string) : P
   let time_to_wait = 20 * 60;
   while (true) {
     let swap = await gateContractWithSigner.getSwap(swapId);
-    console.log(swap);
-    if (swap.signature != "0x") {
+    if (swap.signature && swap.signature != "0x") {
       return swap.signature;
     }
 
