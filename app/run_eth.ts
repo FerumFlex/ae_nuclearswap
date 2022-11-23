@@ -27,23 +27,37 @@ const web3 = new Web3(providerUrl);
 const web3Signer = new Web3(ethProvider);
 const gateContract = new web3.eth.Contract(ethGate.abi, ethGate.networks[ETH_NETWOKR_ID].address);
 const gateContractSigner = new web3Signer.eth.Contract(ethGate.abi, ethGate.networks[ETH_NETWOKR_ID].address);
+let FROM_BLOCK_EVENT = 0;
 
 
 const main = async () => {
   console.log(`Started eth ${ETH_SELF_ADDRESS}`);
+  loadEvents();
+  setInterval(loadEvents, 10000);
+}
+
+function loadEvents() {
+  console.log('Load events');
 
   let options = {
     filter: {
-        value: [],
+      value: [],
     },
-    fromBlock: 0
+    fromBlock: FROM_BLOCK_EVENT
   };
 
-  gateContract.events.FundEvent(options)
-          .on('data', onFundEvent)
-          .on('changed', (changed: any) => console.log(`Changed: ${changed}`))
-          .on('error', (err: any) => console.log(`Err: ${err}`))
-          .on('connected', (str: any) => console.log(`Connected: ${str}`))
+  gateContract.getPastEvents("FundEvent", options, async function(error: any, events: any) {
+    if (error) {
+      console.log(error);
+      return
+    }
+    for (let event of events) {
+      if (event.blockNumber > FROM_BLOCK_EVENT) {
+        FROM_BLOCK_EVENT = event.blockNumber + 1;
+      }
+      await onFundEvent(event);
+    }
+  });
 }
 
 async function onFundEvent(event: any) {

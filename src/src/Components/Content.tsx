@@ -43,7 +43,7 @@ export const Content = observer( () => {
       return;
     }
 
-    if (ethWallet.networkId !== "5") {
+    if (ethWallet.networkId !== "5" && ethWallet.networkId !== "1337") {
       showNotification({
         color: 'red',
         title: 'Error',
