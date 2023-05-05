@@ -1,5 +1,5 @@
 import { IWallet, WalletInfo } from "./Wallet";
-import { getExplorerAddressLink } from '@usedapp/core';
+import { getExplorerAddressLink, getChainName } from '@usedapp/core';
 import { makeObservable, action } from "mobx"
 
 export default class EthWallet extends IWallet {
@@ -18,7 +18,7 @@ export default class EthWallet extends IWallet {
 
   get info() : WalletInfo {
     return {
-      "name": "Ethereum Goerli",
+      "name": "ETH " + (this.networkId ? getChainName(parseInt(this.networkId)) : ""),
       "symbol": "ETH"
     }
   }

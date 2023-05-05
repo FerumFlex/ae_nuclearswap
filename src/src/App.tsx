@@ -37,7 +37,18 @@ const App = observer(() => {
 
   useEffect(() => {
     ethWallet.setInfo(account ? account : "", chainId?.toString(), usdtBalance?.toBigInt());
-  }, [account, chainId, usdtBalance, ethWallet])
+  }, [account, chainId, usdtBalance, ethWallet]);
+
+  const HEADER_LINKS = [
+    {
+      "link": "/",
+      "label": "Swap"
+    },
+    {
+      "link": "/utils",
+      "label": "Utils"
+    }
+  ];
 
   return (
     <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
@@ -45,16 +56,7 @@ const App = observer(() => {
         <NotificationsProvider position="top-right">
           <AppShell
             padding="md"
-            header={<HeaderResponsive links={[
-              {
-                "link": "/",
-                "label": "Swap"
-              },
-              {
-                "link": "/utils",
-                "label": "Utils"
-              }
-            ]} />}
+            header={<HeaderResponsive links={HEADER_LINKS} />}
             footer={<FooterCentered links={[]} />}
           >
             <Routes>

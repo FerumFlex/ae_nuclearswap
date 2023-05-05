@@ -11,6 +11,8 @@ import { aeToEth, ethToAe } from './Actions';
 import { useEthers } from '@usedapp/core'
 
 
+const BLOCKCHAIN_ENV = process.env.REACT_BLOCKCHAIN_ENV;
+
 const useStyles = createStyles((theme) => ({
   exchangeButton: {
     cursor: 'pointer'
@@ -33,24 +35,38 @@ export const Content = observer( () => {
   const { classes } = useStyles();
   const { chainId, library } = useEthers();
 
+  const verifyNetwork = () => {
+    if (BLOCKCHAIN_ENV === "mainnet") {
+      if (aeWallet.networkId !== "ae_mainnet") {
+        return "AE - Switch to mainnet"
+      }
+      if (ethWallet.networkId !== "1") {
+        return "ETH - Switch to mainnet"
+      }
+      return "";
+    } else {
+      if (aeWallet.networkId !== "ae_uat") {
+        return "AE - Switch to testnet"
+      }
+      if (ethWallet.networkId !== "5") {
+        return "ETH - Switch to goerli"
+      }
+    }
+  };
+
+  const networkCheck = verifyNetwork();
+
   const doExchange = async () => {
-    if (aeWallet.networkId !== "ae_uat") {
+    const res = verifyNetwork();
+    if (res) {
       showNotification({
         color: 'red',
         title: 'Error',
-        message: 'Aerenity in beta mode, works only with ae testnet',
+        message: res,
       });
       return;
     }
 
-    if (ethWallet.networkId !== "5" && ethWallet.networkId !== "1337") {
-      showNotification({
-        color: 'red',
-        title: 'Error',
-        message: 'Aerenity in beta mode, works only with goerli',
-      });
-      return;
-    }
     if (!aeWallet.address) {
       showNotification({
         color: 'red',
@@ -121,7 +137,14 @@ export const Content = observer( () => {
         />
 
         <Center style={{paddingTop: "20px"}}>
-          <Button disabled={!fromValue} loading={isLoading} size={"lg"} radius={"md"} onClick={doExchange}>Exchange</Button>
+          <Button
+            disabled={!fromValue}
+            loading={isLoading}
+            color={networkCheck ? "red" : "blue"}
+            size={"lg"}
+            radius={"md"}
+            onClick={doExchange}
+          >{networkCheck ? networkCheck : "Exchange"}</Button>
         </Center>
 
         <Progress currentAction={currentAction} />

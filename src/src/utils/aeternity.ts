@@ -12,7 +12,7 @@ export const initSdk = async(aeWallet : AeWallet) => {
   }
 
   let aeSdk = new AeSdkAepp({
-    name: 'Simple æpp',
+    name: 'Aerenity',
     nodes: [
       { name: 'testnet', instance: new Node(TESTNET_NODE_URL) },
       { name: 'mainnet', instance: new Node(MAINNET_NODE_URL) },

@@ -60,7 +60,7 @@ export default class AeWallet extends IWallet{
 
   get info() : WalletInfo {
     return {
-      "name": "AE Testnet",
+      "name": this.networkId === "ae_mainnet" ? "AE Mainnet" : "AE Testnet",
       "symbol": "AE"
     }
   }

@@ -12,3 +12,4 @@ aeproject/docker
 third_party/
 k8s/
 truffle/build/*.sol
+hardhat/
