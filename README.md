@@ -45,13 +45,13 @@ npm start
 1. Deploy ae
 ```
 cd aeproject
-make deploy
+make deploy_uat
 make copy
 ```
 
 2. Set ae owner. Copy ae gate contract to params for set_owner (aeproject/Makefile). Change ct_ to ak_
 ```
-make set_owner
+make set_owner_uat
 ```
 
 3. Copy ae token address to truffle (truffle/migrations/2_deploy_gate.js)
@@ -59,7 +59,7 @@ make set_owner
 4. Deploy truffle
 ```
 cd truffle
-make deploy-dev
+make deploy_goerli
 make copy
 ```
 

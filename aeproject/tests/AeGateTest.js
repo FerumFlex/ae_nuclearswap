@@ -33,6 +33,7 @@ describe('Gate', () => {
   let nonce = 0;
   let amount = 10000000;
   const wait_time = 2000;
+  let fee = 0;
 
   before(async () => {
     provider = createProvider()
@@ -52,6 +53,7 @@ describe('Gate', () => {
     const sourceGate = utils.getContractContent(GATE_SOURCE);
     contractGate = await aeSdk.getContractInstance({ source: sourceGate, fileSystem: fileSystemGate });
     await contractGate.deploy([Buffer.from(oracle.substr(2), "hex")]);
+    fee = (await contractGate.methods.get_fee()).decodedResult;
 
     mainAddress = await utils.getDefaultAccounts()[0].address();
     secondAddress = await utils.getDefaultAccounts()[1].address();
@@ -176,7 +178,7 @@ describe('Gate', () => {
     assert.equal(result.result.returnType, 'ok');
 
     const unix = (+new Date() + wait_time);
-    result = await contractGate.methods.fund(fromToken, toToken, recipient, amount, ++nonce, unix);
+    result = await contractGate.methods.fund(fromToken, toToken, recipient, amount, ++nonce, unix, {amount: fee});
     assert.equal(result.result.returnType, 'ok');
     assert.equal(result.decodedEvents[0].name, 'FundEvent');
 
@@ -214,7 +216,7 @@ describe('Gate', () => {
     assert.equal(result.result.returnType, 'ok');
 
     const unix = (+new Date() + wait_time);
-    result = await contractGate.methods.fund(fromToken, toToken, recipient, amount, ++nonce, unix);
+    result = await contractGate.methods.fund(fromToken, toToken, recipient, amount, ++nonce, unix, {amount: fee});
 
     const swapId = "0x" + Buffer.from(result.decodedResult).toString("hex");
     console.log(`Swap id: ${swapId}`);

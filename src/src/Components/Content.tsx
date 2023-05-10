@@ -11,7 +11,8 @@ import { aeToEth, ethToAe } from './Actions';
 import { useEthers } from '@usedapp/core'
 
 
-const BLOCKCHAIN_ENV = process.env.REACT_BLOCKCHAIN_ENV;
+const AE_NETWORK = process.env.REACT_APP_AE_NETWORK;
+const ETH_NETWORK = process.env.REACT_APP_ETH_NETWORK;
 
 const useStyles = createStyles((theme) => ({
   exchangeButton: {
@@ -25,7 +26,8 @@ export const Content = observer( () => {
     let info = w.info;
     return {
       value: info.symbol,
-      label: info.name
+      label: info.name,
+      wallet: w
     }
   });
 
@@ -36,21 +38,16 @@ export const Content = observer( () => {
   const { chainId, library } = useEthers();
 
   const verifyNetwork = () => {
-    if (BLOCKCHAIN_ENV === "mainnet") {
-      if (aeWallet.networkId !== "ae_mainnet") {
-        return "AE - Switch to mainnet"
-      }
-      if (ethWallet.networkId !== "1") {
-        return "ETH - Switch to mainnet"
-      }
-      return "";
-    } else {
-      if (aeWallet.networkId !== "ae_uat") {
-        return "AE - Switch to testnet"
-      }
-      if (ethWallet.networkId !== "5") {
-        return "ETH - Switch to goerli"
-      }
+    if (aeWallet.networkId !== AE_NETWORK) {
+      return `AE - Switch to ${AE_NETWORK}`;
+    }
+
+    if ((ETH_NETWORK === "goerli") && (ethWallet.networkId !== "5")) {
+      return "ETH - Switch to goerli";
+    }
+
+    if ((ETH_NETWORK === "development") && (ethWallet.networkId !== "1337")) {
+      return "ETH - Switch to development";
     }
   };
 
@@ -98,6 +95,22 @@ export const Content = observer( () => {
 
   const convertedFromValue = Number(fromValue) / (10 ** wallets.fromWallet.precision);
 
+  const onChangeFromSelect = (data: any) => {
+    if (data === "AE") {
+      wallets.setFromWallet(aeWallet);
+    } else {
+      wallets.setFromWallet(ethWallet);
+    }
+  };
+
+  const onChangeToSelect = (data: any) => {
+    if (data === "AE") {
+      wallets.setToWallet(aeWallet);
+    } else {
+      wallets.setToWallet(ethWallet);
+    }
+  };
+
   return (
     <Stack align="center" justify="center" style={{backgroundColor: "unset", height: "100%"}}>
       <Paper withBorder radius="md" shadow="lg" p="md" style={{width: "500px", padding: "20px"}}>
@@ -106,6 +119,7 @@ export const Content = observer( () => {
           <Select
             radius={"lg"}
             data={networks}
+            onChange={onChangeFromSelect}
             value={wallets.fromWallet.info.symbol}
           />
         </Group>
@@ -126,6 +140,7 @@ export const Content = observer( () => {
           <Select
             radius={"lg"}
             data={networks}
+            onChange={onChangeToSelect}
             value={wallets.toWallet.info.symbol}
           />
         </Group>

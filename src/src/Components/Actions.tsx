@@ -1,8 +1,6 @@
 import { showNotification } from '@mantine/notifications';
 
 import { delay } from '../utils/utils';
-import aeToken from '../contracts/ae_token.json';
-import aeGate from '../contracts/ae_gate.json';
 import ethGate from '../contracts/Gate.json';
 import ethUsdt from '../contracts/USDT.json';
 import { getContract } from '../utils/utils';
@@ -35,7 +33,7 @@ export async function aeToEth(provider: any, chainId: number | undefined, aeWall
       return;
     }
 
-    const gate_address = "ak" + aeGate.address.substr(2);
+    const gate_address = "ak" + aeWallet.aeGate.address.substr(2);
 
     // allowance tokens
     setCurrentAction(0);
@@ -49,16 +47,22 @@ export async function aeToEth(provider: any, chainId: number | undefined, aeWall
     }
 
     setCurrentAction(1);
+    result = await aeWallet.gateContract.methods.get_fee();
+    let fee = result.decodedResult;
+
     try {
       const endtime = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
       const nonce = +new Date();
       result = await aeWallet.gateContract.methods.fund(
-          aeToken.address,
+          aeWallet.aeToken.address,
           Buffer.from(usdtAddressWithSigner.address.substr(2), "hex"),
           Buffer.from(ethWallet.address.substr(2), "hex"),
           amount,
           nonce,
-          endtime
+          endtime,
+          {
+            amount: fee
+          }
       );
       const swapId = "0x" + Buffer.from(result.decodedResult).toString("hex");
       console.log("swap id ", swapId);
@@ -78,7 +82,7 @@ export async function aeToEth(provider: any, chainId: number | undefined, aeWall
       setCurrentAction(3);
       let tx = await gateContractWithSigner.claim(
         swapId,
-        "ak" + aeToken.address.substr(2),
+        "ak" + aeWallet.aeToken.address.substr(2),
         usdtAddressWithSigner.address,
         aeWallet.address,
         ethWallet.address,
@@ -144,24 +148,27 @@ export async function ethToAe(provider: any, chainId: number | undefined, aeWall
 
     setCurrentAction(1);
 
-    let toToken = "ak" + aeToken.address.substr(2);
+    let toToken = "ak" + aeWallet.aeToken.address.substr(2);
     const endtime = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
     const nonce = +new Date();
+    const fee = await gateContractWithSigner.getFee();
 
     try {
-      let tx = await gateContractWithSigner.fund(usdtAddressWithSigner.address, toToken, aeWallet.address, amount, nonce, endtime);
+      let tx = await gateContractWithSigner.fund(usdtAddressWithSigner.address, toToken, aeWallet.address, amount, nonce, endtime, {value: fee.toString()});
       let result = await tx.wait();
+      console.log("result", result);
 
-      if (!(result.events.length === 2 && result.events[1].event === "FundEvent")) {
+      if (!(result.events.length === 3 && result.events[2].event === "FundEvent")) {
         showNotification({
           color: 'red',
           title: 'Error',
           message: 'Can not find fund event',
           icon: <IconX size={16} />,
         });
+        return;
       }
 
-      let fund_event = result.events[1];
+      let fund_event = result.events[2];
       let swapId = fund_event.args[0];
       console.log(`Swap id ${swapId}`);
 

@@ -1,15 +1,12 @@
 const GATE = artifacts.require("Gate");
 const USDT = artifacts.require("USDT");
 
-const TO_TOKENS = {
-  "development": "ct_2HarwDyhRXXo1fqy6joNu4RePWsDb55gBKzvMpusBHc24hEp9C",
-  "goerli": "ct_2HarwDyhRXXo1fqy6joNu4RePWsDb55gBKzvMpusBHc24hEp9C",
-  "goerli-fork": "ct_2HarwDyhRXXo1fqy6joNu4RePWsDb55gBKzvMpusBHc24hEp9C",
-}
+const AE_TOKEN_ADDRESS = process.env["AE_TOKEN_ADDRESS"];
+const ORACLE_ADDRESS = process.env["ORACLE_ADDRESS"];
 
 module.exports = async function (deployer, network) {
-  await deployer.deploy(GATE, "0x9a63911a6495d76b36a94025c16847e4e6236b7a");
+  await deployer.deploy(GATE, ORACLE_ADDRESS);
   let usdtInstance = await USDT.deployed();
   let gateInstance = await GATE.deployed();
-  await gateInstance.addBridge(usdtInstance.address, "ak_" + TO_TOKENS[network].substr(3))
+  await gateInstance.addBridge(usdtInstance.address, "ak_" + AE_TOKEN_ADDRESS.substr(3))
 };

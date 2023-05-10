@@ -32,7 +32,8 @@ contract("GATE", (accounts) => {
 
   it("fund -> refund", async() => {
     const unix = Math.round((+new Date() + wait_time) / 1000);
-    let result = await gateInstance.fund(usdtInstance.address, aeTokenAddress, aeAddress, amount, ++nonce, unix);
+    let fee = await gateInstance.getFee();
+    let result = await gateInstance.fund(usdtInstance.address, aeTokenAddress, aeAddress, amount, ++nonce, unix, {value: fee});
 
     // get swap id
     let swapId = result.receipt.logs[0].args.swapId;
@@ -51,7 +52,8 @@ contract("GATE", (accounts) => {
 
   it("fund -> sign account", async() => {
     const unix = Math.round((+new Date() + wait_time) / 1000);
-    let result = await gateInstance.fund(usdtInstance.address, aeTokenAddress, aeAddress, amount, ++nonce, unix);
+    let fee = await gateInstance.getFee();
+    let result = await gateInstance.fund(usdtInstance.address, aeTokenAddress, aeAddress, amount, ++nonce, unix, {value: fee});
 
     // get swap id
     let swapId = result.receipt.logs[0].args.swapId;
@@ -79,7 +81,8 @@ contract("GATE", (accounts) => {
 
   it("fund -> wrong sign account", async() => {
     const unix = Math.round((+new Date() + wait_time) / 1000);
-    let result = await gateInstance.fund(usdtInstance.address, aeTokenAddress, aeAddress, amount, ++nonce, unix);
+    let fee = await gateInstance.getFee();
+    let result = await gateInstance.fund(usdtInstance.address, aeTokenAddress, aeAddress, amount, ++nonce, unix, {value: fee});
 
     let swapId = result.receipt.logs[0].args.swapId;
 
@@ -91,7 +94,8 @@ contract("GATE", (accounts) => {
 
   it("fund -> not supported bridge", async() => {
     const unix = Math.round((+new Date() + wait_time) / 1000);
-    let result = await gateInstance.fund(usdtInstance.address, aeAddress, aeAddress, amount, ++nonce, unix);
+    let fee = await gateInstance.getFee();
+    let result = await gateInstance.fund(usdtInstance.address, aeAddress, aeAddress, amount, ++nonce, unix, {value: fee});
     assert.notEqual(result.receipt.stack.indexOf("revert this bridge does not exists"), -1, "Bridge should not exists");
   });
 
@@ -132,14 +136,23 @@ contract("GATE", (accounts) => {
       nonce,
     );
 
-    let balance = await usdtInstance.balanceOf(recipient);
-    assert.equal(balance.toString(), "0")
+    const getMethods = (obj) => {
+      let properties = new Set()
+      let currentObj = obj
+      do {
+        Object.getOwnPropertyNames(currentObj).map(item => properties.add(item))
+      } while ((currentObj = Object.getPrototypeOf(currentObj)))
+      return [...properties.keys()].filter(item => typeof obj[item] === 'function')
+    }
+
+    let initialBalance = (await usdtInstance.balanceOf(recipient)).toNumber();
+    let initialBalanceGate = (await usdtInstance.balanceOf(gateInstance.address)).toNumber();
 
     let result = await usdtInstance.transfer(gateInstance.address, amount);
     assert.equal(result.logs[0].event, 'Transfer');
 
-    balance = await usdtInstance.balanceOf(gateInstance.address);
-    assert.equal(balance.toString(), amount.toString());
+    let balance = await usdtInstance.balanceOf(gateInstance.address);
+    assert.equal(balance.toString(), (initialBalanceGate + amount).toString());
 
     let message = swapId;
     let signature = await utils.getSignature(web3, accounts[1], message);
@@ -156,6 +169,6 @@ contract("GATE", (accounts) => {
     assert.equal(result.logs[0].event, 'SwapClaimed');
 
     balance = await usdtInstance.balanceOf(recipient);
-    assert.equal(balance.toString(), amount.toString())
+    assert.equal(balance.toString(), (initialBalance +amount).toString())
   });
 });

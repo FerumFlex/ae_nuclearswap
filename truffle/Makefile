@@ -1,10 +1,10 @@
 deploy:
 	truffle deploy
 
-deploy-goerli:
+deploy_goerli:
 	truffle migrate --network goerli
 
-deploy-dev:
+deploy_dev:
 	truffle migrate --network development --reset
 
 copy:

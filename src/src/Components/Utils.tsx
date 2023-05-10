@@ -38,6 +38,7 @@ export function Utils() {
       // @ts-ignore
 
       const amount = ethers.utils.parseUnits("1000.0", ethWallet.precision);
+      console.log("chainid", chainId)
       try {
         let usdtContractWithSigner = getContract(library, chainId, usdtToken);
         if (! usdtContractWithSigner) {
@@ -59,6 +60,7 @@ export function Utils() {
           icon: <IconCheck size={16} />,
         })
       } catch(Error) {
+        console.log(Error);
         showNotification({
           title: 'Success',
           color: 'red',

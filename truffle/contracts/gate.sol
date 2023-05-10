@@ -58,12 +58,15 @@ contract Gate is Ownable {
     );
 
     event NewOracleEvent(address indexed oracle);
+    event NewFee(uint fee);
 
     address oracle;
 
     mapping(bytes32 => Swap) swaps;
     mapping(bytes32 => Bridge) bridges;
     mapping(bytes32 => bool) usedSwaps;
+
+    uint fee = 0.001 ether;
 
     constructor(address _oracle) {
         oracle = _oracle;
@@ -127,8 +130,14 @@ contract Gate is Ownable {
     )
         external
         futureEndtime(endtime)
+        payable
         returns (bytes32 res)
     {
+        require(msg.value >= fee);
+
+        address payable feeAddress = payable(oracle);
+        feeAddress.transfer(msg.value);
+
         bytes32 bridgeId = getBridgeId(fromToken, toToken);
         if (haveBridge(bridgeId) == false) revert("this bridge does not exists");
 
@@ -261,6 +270,16 @@ contract Gate is Ownable {
 
     function getOracle() public view returns(address oracleAddress) {
         return oracle;
+    }
+
+    // fee
+    function setFee(uint _fee) external onlyOwner {
+        fee = _fee;
+        emit NewFee(fee);
+    }
+
+    function getFee() public view returns(uint feeAmount) {
+        return fee;
     }
 
     // bridge

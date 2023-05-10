@@ -1,8 +1,6 @@
 const { AeSdk, MemoryAccount, Node } = require("@aeternity/aepp-sdk");
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const ethGate = require("./contracts/gate.json");
-const aeGate = require("./contracts/ae_gate.json");
-const aeToken = require("./contracts/ae_token.json");
 const axios = require("axios");
 var Buffer = require('buffer').Buffer;
 
@@ -17,7 +15,17 @@ const INFURA_ACCESS_TOKEN: string = process.env["INFURA_ACCESS_TOKEN"] || "";
 const providerUrl: string = process.env["PROVIDER_URL"] || "";
 const AE_SECRET_KEY = process.env["AE_SECRET_KEY"];
 const AE_ADDRESS = process.env["AE_ADDRESS"];
-const AE_NETWORK = process.env["AE_NETWORK"] || "testnet";
+const AE_NETWORK = process.env["AE_NETWORK"];
+
+let aeGate: any;
+let aeToken: any;
+if (AE_NETWORK == "ae_uat") {
+  aeGate = require("./contracts/ae_gate_ae_uat.json");
+  aeToken = require("./contracts/ae_token_ae_uat.json");
+} else {
+  aeGate = require("./contracts/ae_gate_ae_mainnet.json");
+  aeToken = require("./contracts/ae_token_ae_mainnet.json");
+}
 
 let ethProvider = new HDWalletProvider({
   mnemonic: ETH_MNEMONIC,
@@ -36,7 +44,12 @@ const gateContractSigner = new web3Signer.eth.Contract(
   ethGate.networks[ETH_NETWOKR_ID].address
 );
 
-const NODE_URL = `https://${AE_NETWORK}.aeternity.io`;
+let NODE_URL: string;
+if (AE_NETWORK === "ae_uat") {
+  NODE_URL = "https://testnet.aeternity.io";
+} else {
+  NODE_URL = "https://mainnet.aeternity.io";
+}
 const COMPILER_URL = "https://compiler.aepps.com"; // required for contract interactions
 const aeAccount = {
   publicKey: AE_ADDRESS,
