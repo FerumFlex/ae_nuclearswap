@@ -1,4 +1,4 @@
-import { Config, Goerli, Mainnet, Localhost } from '@usedapp/core';
+import { Config, Goerli, Mainnet, Localhost, ArbitrumGoerli, Arbitrum } from '@usedapp/core';
 
 const REACT_APP_INFURA_PROJECT_ID = process.env.REACT_APP_INFURA_PROJECT_ID;
 const ETH_NETWORK = process.env.REACT_APP_ETH_NETWORK;
@@ -19,6 +19,16 @@ if (ETH_NETWORK === "mainnet") {
   chainID = Localhost.chainId;
   urls = {
     [Localhost.chainId]: 'http://localhost:8545'
+  }
+} else if (ETH_NETWORK === "arbitrum_goerli") {
+  chainID = ArbitrumGoerli.chainId;
+  urls = {
+    [ArbitrumGoerli.chainId]: "https://arbitrum-goerli.infura.io/v3/" + REACT_APP_INFURA_PROJECT_ID,
+  }
+} else if (ETH_NETWORK === "arbitrum") {
+  chainID = Arbitrum.chainId;
+  urls = {
+    [Arbitrum.chainId]: "https://arbitrum.infura.io/v3/" + REACT_APP_INFURA_PROJECT_ID,
   }
 } else {
   throw Error(`Wrong network ${ETH_NETWORK}`);

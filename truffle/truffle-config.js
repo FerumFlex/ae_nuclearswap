@@ -58,7 +58,14 @@ module.exports = {
       network_id: 5,
       gas: 4500000,
       gasPrice: 4000000000,
+    },
+    arbitrum_goerli: {
+      network_id: 421613,
+      provider: function() {
+        return new HDWalletProvider(mnemonic, `https://arbitrum-goerli.infura.io/v3/${INFURA_ACCESS_TOKEN}`);
+      }
     }
+
     //
     // An additional network, but with some advanced options…
     // advanced: {

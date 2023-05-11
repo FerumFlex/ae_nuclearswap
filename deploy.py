@@ -7,14 +7,14 @@ import subprocess
 
 ORACLE_ADDRESS = "0x9a63911a6495d76b36a94025c16847e4e6236b7a"
 AE_NETWORK = "ae_uat"  # could be: ae_uat, ae_mainnet
-ETH_NETWORK = "development"  # could be: goerli, development
-TRUFFLE_PATH = pathlib.Path().home() / ".nvm" / "versions" / "node" / "v14.18.2" / "bin"
+ETH_NETWORK = "arbitrum_goerli"  # could be: goerli, development, arbitrum_goerli
 
 # computed fields
 BASE = pathlib.Path(__file__).parent
 ETH_NETWORK_IDS = {
     "goerli": "5",
     "development": "1337",
+    "arbitrum_goerli": "421613"
 }
 ETH_NETWORK_ID = ETH_NETWORK_IDS[ETH_NETWORK]
 

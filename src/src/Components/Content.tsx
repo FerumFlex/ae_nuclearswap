@@ -38,6 +38,10 @@ export const Content = observer( () => {
   const { chainId, library } = useEthers();
 
   const verifyNetwork = () => {
+    if (!aeWallet.networkId) {
+      return "Connect AE wallet";
+    }
+
     if (aeWallet.networkId !== AE_NETWORK) {
       return `AE - Switch to ${AE_NETWORK}`;
     }
