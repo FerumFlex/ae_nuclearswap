@@ -19,10 +19,13 @@ const AE_NETWORK = process.env["AE_NETWORK"];
 
 let aeGate: any;
 let aeToken: any;
+let networkName: any;
 if (AE_NETWORK == "ae_uat") {
+  networkName = "testnet";
   aeGate = require("./contracts/ae_gate_ae_uat.json");
   aeToken = require("./contracts/ae_token_ae_uat.json");
 } else {
+  networkName = "mainnet";
   aeGate = require("./contracts/ae_gate_ae_mainnet.json");
   aeToken = require("./contracts/ae_token_ae_mainnet.json");
 }
@@ -51,25 +54,17 @@ if (AE_NETWORK === "ae_uat") {
   NODE_URL = "https://mainnet.aeternity.io";
 }
 const COMPILER_URL = "https://compiler.aepps.com"; // required for contract interactions
-const aeAccount = {
-  publicKey: AE_ADDRESS,
-  secretKey: AE_SECRET_KEY,
-};
-const senderAccount = new MemoryAccount({
-  keypair: aeAccount,
-});
+const senderAccount = new MemoryAccount(AE_SECRET_KEY);
 let HEX_RUNNED : string[] = [];
 
 const main = async () => {
   const nodeInstance = new Node(NODE_URL)
   const aeSdk = new AeSdk({
     compilerUrl: COMPILER_URL,
-    nodes: [{ name: 'testnet', instance: nodeInstance }],
+    nodes: [{ name: networkName, instance: nodeInstance }],
+    accounts: [senderAccount]
   })
-  aeSdk.addAccount(senderAccount);
-  aeSdk.selectAccount(await senderAccount.address());
-
-  const gateContract = await aeSdk.getContractInstance({ aci: aeGate["aci"], contractAddress: aeGate["address"] });
+  const gateContract = await aeSdk.initializeContract({ aci: aeGate["aci"], address: aeGate["address"] });
 
   console.log(`Started ae ${AE_ADDRESS}`);
   await processContracts(gateContract);
@@ -82,7 +77,7 @@ const singSwap = async (gateContract : any, swapId: string) => {
   const account = ETH_SELF_ADDRESS;
   const signature = await getSignature(web3Signer, account, swapId)
   const correctSignature = ethSignatureToAe(signature);
-  let res = await gateContract.methods.sign(swapId, correctSignature);
+  let res = await gateContract.sign(swapId, correctSignature);
   console.log(`🔵 ${swapId} was signed ${res.hash}`)
 }
 
@@ -146,7 +141,7 @@ const processLockContract = async (contracts: any[], gateContract: any) => {
 const processContracts = async (gateContract: any) => {
   console.log("Processing contracts");
 
-  const result = await gateContract.methods.swaps();
+  const result = await gateContract.swaps();
   const filteredContracts = filterContracts(result.decodedResult);
 
   await processLockContract(filteredContracts, gateContract)

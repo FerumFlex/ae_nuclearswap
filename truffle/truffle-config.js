@@ -20,6 +20,7 @@
 
 require('dotenv').config();
 const mnemonic = process.env["MNEMONIC"];
+const arbitrum_mnemonic = process.env["ARBITRUM_MNEMONIC"];
 const INFURA_ACCESS_TOKEN = process.env["INFURA_ACCESS_TOKEN"];
 
 const HDWalletProvider = require('@truffle/hdwallet-provider');
@@ -63,6 +64,13 @@ module.exports = {
       network_id: 421613,
       provider: function() {
         return new HDWalletProvider(mnemonic, `https://arbitrum-goerli.infura.io/v3/${INFURA_ACCESS_TOKEN}`);
+      }
+    },
+    arbitrum: {
+      network_id: 42161,
+      gasPrice: 100000000,  // 0.1 gwei (in wei)
+      provider: function() {
+        return new HDWalletProvider(arbitrum_mnemonic, `https://arbitrum-mainnet.infura.io/v3/${INFURA_ACCESS_TOKEN}`);
       }
     }
 

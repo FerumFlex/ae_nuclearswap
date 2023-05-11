@@ -68,3 +68,15 @@ make copy
 cd aeproject
 make add_bridge
 ```
+
+
+
+✅✅✅ DEPLOY COMPLETED ✅✅✅
+✅✅✅ Ae token address: ct_qA5nCB1TYJRQqfD19duunNJv1dRkqqirKVynG3EvMBCGfZtXh
+✅✅✅ Ae gate address: ct_2tADAnX2QvfhjW4xEJUUHicayMX464SEfdm2tKLoWYPGvdK5hd
+✅✅✅ Eth token address: 0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9
+✅✅✅ Eth gate address: 0x50bD2caDA1362b112d65145dD9D827Ec521a27b6
+
+# First swap(not claimed) can be claimed by (ak_2QSYGGcpDBS69JrEQmL1ADVdqafBg3MtZ769ERwmHRRrgCLG2W)
+Swap id 0xeffaf116a62db31b998ae8784eb87241edb52f5282e98949b541ce6bfd7301ce
+signature 0x227b111fbcf8d4725a2e1714abfe9960ebfedef9001bd2e75498408768b9e4b96fb70e182a21d636b97120a34ea3ead7b6c5cbe3a1367d594def6dee09cad5be1b

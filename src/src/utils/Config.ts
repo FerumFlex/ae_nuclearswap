@@ -28,7 +28,7 @@ if (ETH_NETWORK === "mainnet") {
 } else if (ETH_NETWORK === "arbitrum") {
   chainID = Arbitrum.chainId;
   urls = {
-    [Arbitrum.chainId]: "https://arbitrum.infura.io/v3/" + REACT_APP_INFURA_PROJECT_ID,
+    [Arbitrum.chainId]: "https://arbitrum-mainnet.infura.io/v3/" + REACT_APP_INFURA_PROJECT_ID,
   }
 } else {
   throw Error(`Wrong network ${ETH_NETWORK}`);

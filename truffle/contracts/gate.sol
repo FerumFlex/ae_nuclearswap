@@ -66,7 +66,7 @@ contract Gate is Ownable {
     mapping(bytes32 => Bridge) bridges;
     mapping(bytes32 => bool) usedSwaps;
 
-    uint fee = 0.001 ether;
+    uint fee = 0.0005 ether;
 
     constructor(address _oracle) {
         oracle = _oracle;

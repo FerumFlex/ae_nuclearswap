@@ -3,8 +3,8 @@ import { IWallet, WalletInfo } from "./Wallet";
 import { makeObservable, action, observable } from "mobx"
 import aeTokenUat from '../contracts/ae_token_ae_uat.json';
 import aeGateUat from '../contracts/ae_gate_ae_uat.json';
-// import aeTokenMainnet from '../contracts/ae_token_ae_mainnet.json';
-// import aeGateMainnet from '../contracts/ae_gate_ae_mainnet.json';
+import aeTokenMainnet from '../contracts/ae_token_ae_mainnet.json';
+import aeGateMainnet from '../contracts/ae_gate_ae_mainnet.json';
 
 const AE_NETWORK = process.env.REACT_APP_AE_NETWORK;
 
@@ -43,8 +43,10 @@ export default class AeWallet extends IWallet{
     this.address = _address;
     this.networkId = _networkId;
 
-    this.usdtContract = await this.aeSdk.getContractInstance({ aci: this.aeToken.aci, bytecode: this.aeToken.bytecode, contractAddress: this.aeToken.address});
-    this.gateContract = await this.aeSdk.getContractInstance({ aci: this.aeGate.aci, bytecode: this.aeGate.bytecode, contractAddress: this.aeGate.address});
+    this.usdtContract = await this.aeSdk.initializeContract({ aci: this.aeToken.aci, address: this.aeToken.address});
+    this.gateContract = await this.aeSdk.initializeContract({ aci: this.aeGate.aci, address: this.aeGate.address});
+
+    console.log(this.gateContract);
 
     await this.updateBalance();
     setInterval(async () => {
@@ -53,7 +55,7 @@ export default class AeWallet extends IWallet{
   }
 
   async updateBalance() {
-    let result = await this.usdtContract.methods.balance(this.address);
+    let result = await this.usdtContract.balance(this.address);
     this.setBalance(result.decodedResult || 0n);
   }
 
@@ -74,7 +76,7 @@ export default class AeWallet extends IWallet{
 
   get aeToken() : any {
     if (AE_NETWORK === "ae_mainnet") {
-      throw Error("No mainnet");
+      return aeTokenMainnet;
     } else {
       return aeTokenUat;
     }
@@ -82,7 +84,7 @@ export default class AeWallet extends IWallet{
 
   get aeGate() : any {
     if (AE_NETWORK === "ae_mainnet") {
-      throw Error("No mainnet");
+      return aeGateMainnet;
     } else {
       return aeGateUat;
     }

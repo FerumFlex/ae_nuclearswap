@@ -6,7 +6,9 @@ import { ethers } from "ethers";
 import usdtToken from '../contracts/USDT.json';
 import { useEthers } from '@usedapp/core'
 import { IconCheck, IconX } from '@tabler/icons';
-import { getContract } from '../utils/utils';
+import { getContract, getMainnetUsdtContract } from '../utils/utils';
+
+const ETH_NETWORK = process.env.REACT_APP_ETH_NETWORK;
 
 
 export function Utils() {
@@ -40,7 +42,12 @@ export function Utils() {
       const amount = ethers.utils.parseUnits("1000.0", ethWallet.precision);
       console.log("chainid", chainId)
       try {
-        let usdtContractWithSigner = getContract(library, chainId, usdtToken);
+        let usdtContractWithSigner;
+        if (ETH_NETWORK === "arbitrum") {
+          usdtContractWithSigner = getMainnetUsdtContract(library);
+        } else {
+          usdtContractWithSigner = getContract(library, chainId, usdtToken);
+        }
         if (! usdtContractWithSigner) {
           showNotification({
             title: 'Error',

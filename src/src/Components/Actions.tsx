@@ -3,10 +3,11 @@ import { showNotification } from '@mantine/notifications';
 import { delay } from '../utils/utils';
 import ethGate from '../contracts/Gate.json';
 import ethUsdt from '../contracts/USDT.json';
-import { getContract } from '../utils/utils';
+import { getContract, getMainnetUsdtContract } from '../utils/utils';
 import { IconCheck, IconX } from '@tabler/icons';
 
 const Buffer = require('buffer').Buffer;
+const ETH_NETWORK = process.env.REACT_APP_ETH_NETWORK;
 
 export async function aeToEth(provider: any, chainId: number | undefined, aeWallet: any, ethWallet: any, contracts: any, amount: bigint, setIsLoading: any, setCurrentAction: any) {
   setIsLoading(true);
@@ -22,7 +23,12 @@ export async function aeToEth(provider: any, chainId: number | undefined, aeWall
       return;
     }
 
-    let usdtAddressWithSigner = getContract(provider, chainId, ethUsdt);
+    let usdtAddressWithSigner;
+    if (ETH_NETWORK === "arbitrum") {
+      usdtAddressWithSigner = getMainnetUsdtContract(provider);
+    } else {
+      usdtAddressWithSigner = getContract(provider, chainId, ethUsdt);
+    }
     if (! usdtAddressWithSigner) {
       showNotification({
         color: 'red',
@@ -38,22 +44,22 @@ export async function aeToEth(provider: any, chainId: number | undefined, aeWall
     // allowance tokens
     setCurrentAction(0);
     let result : any = null;
-    result = await aeWallet.usdtContract.methods.allowance({from_account: aeWallet.address, for_account: gate_address})
+    result = await aeWallet.usdtContract.allowance({from_account: aeWallet.address, for_account: gate_address})
     let allowed = result.decodedResult;
     if (allowed === undefined) {
-      await aeWallet.usdtContract.methods.create_allowance(gate_address, amount);
+      await aeWallet.usdtContract.create_allowance(gate_address, amount);
     } else if (allowed < amount) {
-      await aeWallet.usdtContract.methods.change_allowance(gate_address, amount);
+      await aeWallet.usdtContract.change_allowance(gate_address, amount);
     }
 
     setCurrentAction(1);
-    result = await aeWallet.gateContract.methods.get_fee();
+    result = await aeWallet.gateContract.get_fee();
     let fee = result.decodedResult;
 
     try {
       const endtime = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
       const nonce = +new Date();
-      result = await aeWallet.gateContract.methods.fund(
+      result = await aeWallet.gateContract.fund(
           aeWallet.aeToken.address,
           Buffer.from(usdtAddressWithSigner.address.substr(2), "hex"),
           Buffer.from(ethWallet.address.substr(2), "hex"),
@@ -129,7 +135,12 @@ export async function ethToAe(provider: any, chainId: number | undefined, aeWall
       return;
     }
 
-    let usdtAddressWithSigner = getContract(provider, chainId, ethUsdt);
+    let usdtAddressWithSigner;
+    if (ETH_NETWORK === "arbitrum") {
+      usdtAddressWithSigner = getMainnetUsdtContract(provider);
+    } else {
+      usdtAddressWithSigner = getContract(provider, chainId, ethUsdt);
+    }
     if (! usdtAddressWithSigner) {
       showNotification({
         color: 'red',
@@ -141,6 +152,7 @@ export async function ethToAe(provider: any, chainId: number | undefined, aeWall
     }
 
     const allowance = await usdtAddressWithSigner.allowance(ethWallet.address, gateContractWithSigner.address);
+    console.log(allowance);
     if (allowance.toBigInt() < amount) {
       let tx = await usdtAddressWithSigner.approve(gateContractWithSigner.address, "115792089237316195423570985008687907853269984665640564039457584007913129639935")
       await tx.wait();
@@ -185,7 +197,7 @@ export async function ethToAe(provider: any, chainId: number | undefined, aeWall
       console.log(`signature ${signature}`);
 
       setCurrentAction(3);
-      await aeWallet.gateContract.methods.claim(
+      await aeWallet.gateContract.claim(
         Buffer.from(swapId.substr(2), "hex"),
         Buffer.from(usdtAddressWithSigner.address.substr(2), "hex"),
         toToken,
@@ -250,7 +262,7 @@ async function ethwaitForSigned(gateContractWithSigner: any, swapId: string) : P
 async function aeWaitForsigned(aeWallet: any, swapId: string) : Promise<string> {
   let time_to_wait = 20 * 60;
   while (true) {
-    let result = await aeWallet.gateContract.methods.get_swap(swapId);
+    let result = await aeWallet.gateContract.get_swap(swapId);
     let swap = result.decodedResult;
     if (swap.signature) {
       return swap.signature;

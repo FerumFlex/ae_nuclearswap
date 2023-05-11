@@ -12,3 +12,9 @@ run_eth_arbitrum_goerli:
 
 run_ae_arbitrum_goerli:
 	set -o allexport; source .env.arbitrum-goerli; ts-node run_ae.ts
+
+run_eth_arbitrum:
+	set -o allexport; source .env.arbitrum; set +o allexport; ts-node run_eth.ts
+
+run_ae_arbitrum:
+	set -o allexport; source .env.arbitrum; ts-node run_ae.ts

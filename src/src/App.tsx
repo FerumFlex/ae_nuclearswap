@@ -6,17 +6,17 @@ import { FooterCentered } from './Components/Footer';
 import { Content } from './Components/Content';
 import { Utils } from './Components/Utils';
 import { initSdk } from './utils/aeternity';
-import {
-  Routes,
-  Route,
-} from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { observer } from "mobx-react-lite"
 import { useStore } from './store';
 import { MantineProvider, ColorSchemeProvider, ColorScheme } from '@mantine/core';
 import { useEthers, useTokenBalance } from '@usedapp/core'
 import usdtToken from './contracts/USDT.json';
 import { NotificationsProvider } from '@mantine/notifications';
+import { ARBITRUM_USDT_ADDRESS } from './utils/utils';
 
+const AE_NETWORK = process.env.REACT_APP_AE_NETWORK;
+const ETH_NETWORK = process.env.REACT_APP_ETH_NETWORK;
 
 const App = observer(() => {
   const { account, chainId } = useEthers();
@@ -25,8 +25,13 @@ const App = observer(() => {
   const toggleColorScheme = (value?: ColorScheme) => setColorScheme(value || (colorScheme === 'dark' ? 'light' : 'dark'));
 
   let chainIdStr : string = chainId ? chainId.toString() : "";
-  // @ts-ignore
-  let address = chainIdStr && usdtToken.networks[chainIdStr] ? usdtToken.networks[chainIdStr].address : "";
+  let address: string;
+  if (ETH_NETWORK === "arbitrum") {
+    address = ARBITRUM_USDT_ADDRESS;
+  } else {
+    // @ts-ignore
+    address = chainIdStr && usdtToken.networks[chainIdStr] ? usdtToken.networks[chainIdStr].address : "";
+  }
   let usdtBalance = useTokenBalance(address, account);
 
   useEffect(() => {
@@ -39,16 +44,26 @@ const App = observer(() => {
     ethWallet.setInfo(account ? account : "", chainId?.toString(), usdtBalance?.toBigInt());
   }, [account, chainId, usdtBalance, ethWallet]);
 
-  const HEADER_LINKS = [
-    {
-      "link": "/",
-      "label": "Swap"
-    },
-    {
-      "link": "/utils",
-      "label": "Utils"
-    }
-  ];
+  let HEADER_LINKS;
+  if (AE_NETWORK === "ae_mainnet") {
+    HEADER_LINKS = [
+      {
+        "link": "/",
+        "label": "Bridge"
+      }
+    ];
+  } else {
+    HEADER_LINKS = [
+      {
+        "link": "/",
+        "label": "Bridge"
+      },
+      {
+        "link": "/utils",
+        "label": "Utils"
+      }
+    ];
+  }
 
   return (
     <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
