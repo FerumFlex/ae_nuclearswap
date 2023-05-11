@@ -31,6 +31,7 @@ build:
   services:
     - name: docker:20.10.16-dind
       alias: dockerdind
+      command: [ "--tls=false" ]
   script:
     - cd app/
     - docker pull $CI_REGISTRY:latest || true
