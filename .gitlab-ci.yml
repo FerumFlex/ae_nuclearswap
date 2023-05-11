@@ -29,7 +29,8 @@ build:
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   services:
-    - docker:20.10.16-dind
+    - name: docker:20.10.16-dind
+      alias: dockerdind
   script:
     - cd app/
     - docker pull $CI_REGISTRY:latest || true
