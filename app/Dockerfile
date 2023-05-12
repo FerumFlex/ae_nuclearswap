@@ -1,4 +1,4 @@
-FROM node:18.16.0
+FROM node:16.20
 
 RUN npm install -g ts-node
 
