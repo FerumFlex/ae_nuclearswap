@@ -71,7 +71,7 @@ describe('Gate', () => {
     provider.engine.stop();
   });
 
-  it("claim -> success", async() => {
+  it("claim -> success -> claim(x)", async() => {
     let fromToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
     let toToken = "ak_" + contractToken.$options.address.substr(3);
     let sender = accounts[0];
@@ -122,7 +122,7 @@ describe('Gate', () => {
     }
   });
 
-  it("claim -> fail wrong signer", async() => {
+  it("claim -> fail wrong signer(x)", async() => {
     let fromToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
     let toToken = "ak_" + contractToken.$options.address.substr(3);
     let sender = accounts[0];
@@ -151,7 +151,7 @@ describe('Gate', () => {
     }
   });
 
-  it("claim -> fail wrong swapId", async() => {
+  it("claim -> fail wrong swapId(x)", async() => {
     let fromToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
     let toToken = "ak_" + contractToken.$options.address.substr(3);
     let sender = accounts[0];
@@ -180,7 +180,7 @@ describe('Gate', () => {
     }
   });
 
-  it("fund -> sign", async() => {
+  it("fund -> sign -> cancel(x)", async() => {
     let fromToken = contractToken.$options.address;
     let toToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
     let recipient = "0x13cd6b3B1e9ccC18dC47E41785A613CA9725ccBC";
@@ -224,7 +224,7 @@ describe('Gate', () => {
     }
   });
 
-  it("fund -> cancel", async() => {
+  it("fund -> cancel -> sign(x)", async() => {
     let fromToken = contractToken.$options.address;
     let toToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
     let recipient = "0x13cd6b3B1e9ccC18dC47E41785A613CA9725ccBC";
@@ -267,5 +267,33 @@ describe('Gate', () => {
 
     balance = (await contractToken.balance(mainAddress)).decodedResult;
     assert.equal(balance, initialBalance, "Should matches balance as with revert changes");
+
+    try {
+      let signature = await testUtils.getSignature(web3, oracle, swapId);
+      let convertedSignature = testUtils.ethSignatureToAe(signature);
+      await contractGate.sign(swapId, convertedSignature);
+    } catch(error) {
+      assert.equal(error.message, 'Invocation failed: "withdrawable: already refunded"');
+    }
+  });
+
+  it("set fee -> get fee -> set fee(x)(wrong acc)", async() => {
+    let newFee = 20_000_000_000_000_000;
+    let fee = (await contractGate.get_fee()).decodedResult;
+    assert.notEqual(fee, newFee);
+
+    let result = await contractGate.set_fee(newFee);
+    assert.equal(result.result.returnType, 'ok');
+
+    fee = (await contractGate.get_fee()).decodedResult;
+    assert.equal(fee, newFee);
+
+    try {
+      let accounts = utils.getDefaultAccounts();
+      await contractGate.set_fee(newFee, {onAccount: accounts[1]});
+      assert.equal(1, 0, "Should not get there");
+    } catch (error) {
+      assert.equal(error.message, `Invocation failed: "ONLY_OWNER_CALL_ALLOWED"`);
+    }
   });
 });
