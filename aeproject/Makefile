@@ -1,4 +1,5 @@
-tests:
+.PHONY: test
+test:
 	aeproject test
 
 env:
