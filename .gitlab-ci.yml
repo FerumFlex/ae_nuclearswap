@@ -53,7 +53,7 @@ deploy_cdn:
     - npm run deploy
 
 make_release:
-  image: node:16-buster-slim
+  image: node:18-buster-slim
   stage: release
   before_script:
     - apt-get update && apt-get install -y --no-install-recommends git-core ca-certificates
