@@ -1,8 +1,8 @@
-test:
+tests:
 	aeproject test
 
 env:
-	aeproject env --nodeVersion v6.6.0
+	aeproject env
 
 deploy_uat:
 	rm ../src/src/contracts/ae_token_ae_uat.json || true

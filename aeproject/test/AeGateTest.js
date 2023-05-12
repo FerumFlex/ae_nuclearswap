@@ -46,20 +46,20 @@ describe('Gate', () => {
 
     const fileSystemToken = utils.getFilesystem(TOKEN_SOURCE);
     const sourceToken = utils.getContractContent(TOKEN_SOURCE);
-    contractToken = await aeSdk.getContractInstance({ source: sourceToken, fileSystem: fileSystemToken });
-    await contractToken.deploy(["USDT", 6, "USDT"]);
+    contractToken = await aeSdk.initializeContract({ sourceCode: sourceToken, fileSystem: fileSystemToken });
+    await contractToken.init("USDT", 6, "USDT");
 
     const fileSystemGate = utils.getFilesystem(GATE_SOURCE);
     const sourceGate = utils.getContractContent(GATE_SOURCE);
-    contractGate = await aeSdk.getContractInstance({ source: sourceGate, fileSystem: fileSystemGate });
-    await contractGate.deploy([Buffer.from(oracle.substr(2), "hex")]);
-    fee = (await contractGate.methods.get_fee()).decodedResult;
+    contractGate = await aeSdk.initializeContract({ sourceCode: sourceGate, fileSystem: fileSystemGate });
+    await contractGate.init(Buffer.from(oracle.substr(2), "hex"));
+    fee = (await contractGate.get_fee()).decodedResult;
 
-    mainAddress = await utils.getDefaultAccounts()[0].address();
-    secondAddress = await utils.getDefaultAccounts()[1].address();
+    mainAddress = await utils.getDefaultAccounts()[0].address;
+    secondAddress = await utils.getDefaultAccounts()[1].address;
 
-    await contractToken.methods.mint(mainAddress, amount * 100);
-    await contractToken.methods.set_owner("ak_" + contractGate.deployInfo.address.substr(3));
+    await contractToken.mint(mainAddress, amount * 100);
+    await contractToken.set_owner("ak_" + contractGate.$options.address.substr(3));
 
     // create a snapshot of the blockchain state
     await utils.createSnapshot(aeSdk);
@@ -73,7 +73,7 @@ describe('Gate', () => {
 
   it("claim -> success", async() => {
     let fromToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
-    let toToken = "ak_" + contractToken.deployInfo.address.substr(3);
+    let toToken = "ak_" + contractToken.$options.address.substr(3);
     let sender = accounts[0];
     let recipient = secondAddress;
     let amount = 10000000;
@@ -85,11 +85,11 @@ describe('Gate', () => {
 
     // chekk hshes are equal
     let hash = await web3.eth.accounts.hashMessage(swapId);
-    let hashCalcResult = await contractGate.methods.get_unsigned_msg(swapId);
+    let hashCalcResult = await contractGate.get_unsigned_msg(swapId);
     let hashCalc = "0x" + Buffer.from(hashCalcResult.decodedResult).toString('hex');
     assert.equal(hash, hashCalc);
 
-    let result = await contractGate.methods.claim(
+    let result = await contractGate.claim(
       swapId,
       Buffer.from(fromToken.substr(2), "hex"),
       toToken,
@@ -101,13 +101,13 @@ describe('Gate', () => {
     );
     assert.equal(result.result.returnType, "ok");
 
-    result = await contractToken.methods.balance(secondAddress);
+    result = await contractToken.balance(secondAddress);
     assert.equal(result.decodedResult, amount);
   });
 
   it("claim -> fail wrong signer", async() => {
     let fromToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
-    let toToken = "ak_" + contractToken.deployInfo.address.substr(3);
+    let toToken = "ak_" + contractToken.$options.address.substr(3);
     let sender = accounts[0];
     let recipient = secondAddress;
     let amount = 10000000;
@@ -118,7 +118,7 @@ describe('Gate', () => {
     let convertedSignature = testUtils.ethSignatureToAe(signature);
 
     try {
-      await contractGate.methods.claim(
+      await contractGate.claim(
         swapId,
         Buffer.from(fromToken.substr(2), "hex"),
         toToken,
@@ -136,7 +136,7 @@ describe('Gate', () => {
 
   it("claim -> fail wrong swapId", async() => {
     let fromToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
-    let toToken = "ak_" + contractToken.deployInfo.address.substr(3);
+    let toToken = "ak_" + contractToken.$options.address.substr(3);
     let sender = accounts[0];
     let recipient = mainAddress;
     let amount = 10000000;
@@ -147,7 +147,7 @@ describe('Gate', () => {
     let convertedSignature = testUtils.ethSignatureToAe(signature);
 
     try {
-      await contractGate.methods.claim(
+      await contractGate.claim(
         swapId,
         Buffer.from(fromToken.substr(2), "hex"),
         toToken,
@@ -164,71 +164,70 @@ describe('Gate', () => {
   });
 
   it("fund -> sign", async() => {
-    let fromToken = contractToken.deployInfo.address;
+    let fromToken = contractToken.$options.address;
     let toToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
     let recipient = "0x13cd6b3B1e9ccC18dC47E41785A613CA9725ccBC";
     let amount = 10000000n;
     let nonce = 1;
-    let initialBalance = (await contractToken.methods.balance(mainAddress)).decodedResult;
+    let initialBalance = (await contractToken.balance(mainAddress)).decodedResult;
 
-    let result = await contractGate.methods.add_bridge(fromToken, toToken);
+    let result = await contractGate.add_bridge(fromToken, toToken);
     assert.equal(result.result.returnType, 'ok');
 
-    result = await contractToken.methods.create_allowance("ak_" + contractGate.deployInfo.address.substr(3), amount * 10n);
+    result = await contractToken.create_allowance("ak_" + contractGate.$options.address.substr(3), amount * 10n);
     assert.equal(result.result.returnType, 'ok');
 
     const unix = (+new Date() + wait_time);
-    result = await contractGate.methods.fund(fromToken, toToken, recipient, amount, ++nonce, unix, {amount: fee});
+    result = await contractGate.fund(fromToken, toToken, recipient, amount, ++nonce, unix, {amount: fee});
     assert.equal(result.result.returnType, 'ok');
     assert.equal(result.decodedEvents[0].name, 'FundEvent');
 
     const swapId = "0x" + Buffer.from(result.decodedResult).toString("hex");
-    console.log(`Swap id: ${swapId}`);
 
-    let balance = (await contractToken.methods.balance(mainAddress)).decodedResult;
+    let balance = (await contractToken.balance(mainAddress)).decodedResult;
     assert.equal(balance + amount, initialBalance, "Should withdraw some funds");
 
-    let contractBalance = (await contractToken.methods.balance("ak_" + contractGate.deployInfo.address.substr(3))).decodedResult;
+    let contractBalance = (await contractToken.balance("ak_" + contractGate.$options.address.substr(3))).decodedResult;
     assert.equal(contractBalance, amount, "Contract should have funds");
 
     let signature = await testUtils.getSignature(web3, oracle, swapId);
     let convertedSignature = testUtils.ethSignatureToAe(signature);
-    result = await contractGate.methods.sign(swapId, convertedSignature);
+    result = await contractGate.sign(swapId, convertedSignature);
     assert.equal(result.result.returnType, 'ok');
     assert.equal(result.decodedEvents[0].name, 'SwapSigned');
 
-    contractBalance = (await contractToken.methods.balance("ak_" + contractGate.deployInfo.address.substr(3))).decodedResult;
+    contractBalance = (await contractToken.balance("ak_" + contractGate.$options.address.substr(3))).decodedResult;
     assert.equal(contractBalance, 0n, "Should burn amount");
   });
 
   it("fund -> cancel", async() => {
-    let fromToken = contractToken.deployInfo.address;
+    let fromToken = contractToken.$options.address;
     let toToken = "0xf8d334489c97Ca647120d5a260F391585018ebee";
     let recipient = "0x13cd6b3B1e9ccC18dC47E41785A613CA9725ccBC";
     let amount = 10000000n;
     let nonce = 1;
-    let initialBalance = (await contractToken.methods.balance(mainAddress)).decodedResult;
+    let initialBalance = (await contractToken.balance(mainAddress)).decodedResult;
 
-    let result = await contractGate.methods.add_bridge(fromToken, toToken);
+    let result = await contractGate.add_bridge(fromToken, toToken);
     assert.equal(result.result.returnType, 'ok');
 
-    result = await contractToken.methods.create_allowance("ak_" + contractGate.deployInfo.address.substr(3), amount * 10n);
+    result = await contractToken.create_allowance("ak_" + contractGate.$options.address.substr(3), amount * 10n);
     assert.equal(result.result.returnType, 'ok');
 
     const unix = (+new Date() + wait_time);
-    result = await contractGate.methods.fund(fromToken, toToken, recipient, amount, ++nonce, unix, {amount: fee});
+    result = await contractGate.fund(fromToken, toToken, recipient, amount, ++nonce, unix, {amount: fee});
 
     const swapId = "0x" + Buffer.from(result.decodedResult).toString("hex");
     console.log(`Swap id: ${swapId}`);
 
-    let balance = (await contractToken.methods.balance(mainAddress)).decodedResult;
+    let balance = (await contractToken.balance(mainAddress)).decodedResult;
     assert.equal(balance + amount, initialBalance, "Should withdraw some funds");
 
-    let contractBalance = (await contractToken.methods.balance("ak_" + contractGate.deployInfo.address.substr(3))).decodedResult;
+    let contractBalance = (await contractToken.balance("ak_" + contractGate.$options.address.substr(3))).decodedResult;
     assert.equal(contractBalance, amount, "Contract should have funds");
 
     try {
-      await contractGate.methods.fund_cancel(swapId);
+      await contractGate.fund_cancel(swapId);
       assert.equal(1, 0, "Should not get there");
     } catch(error) {
       assert.equal(error.message, 'Invocation failed: "refundable: endtime not yet passed"');
@@ -237,13 +236,13 @@ describe('Gate', () => {
     await testUtils.delay(wait_time);
 
     // just mine transaction to increase timer
-    result = await contractToken.methods.change_allowance("ak_" + contractGate.deployInfo.address.substr(3), amount * 10n);
+    result = await contractToken.change_allowance("ak_" + contractGate.$options.address.substr(3), amount * 10n);
     assert.equal(result.result.returnType, 'ok');
 
-    result = await contractGate.methods.fund_cancel(swapId);
+    result = await contractGate.fund_cancel(swapId);
     assert.equal(result.result.returnType, 'ok');
 
-    balance = (await contractToken.methods.balance(mainAddress)).decodedResult;
+    balance = (await contractToken.balance(mainAddress)).decodedResult;
     assert.equal(balance, initialBalance, "Should matches balance as with revert changes");
   });
 });

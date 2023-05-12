@@ -18,10 +18,10 @@ describe('FungibleTokenFull', () => {
     const source = utils.getContractContent(TOKEN_SOURCE);
 
     // initialize the contract instance
-    contract = await aeSdk.getContractInstance({ source, fileSystem });
-    await contract.deploy(["USDT", 6, "USDT"]);
-    const address = await utils.getDefaultAccounts()[0].address();
-    await contract.methods.mint(address, original_amount);
+    contract = await aeSdk.initializeContract({ sourceCode: source, fileSystem: fileSystem });
+    await contract.init("USDT", 6, "USDT");
+    const address = await utils.getDefaultAccounts()[0].address;
+    await contract.mint(address, original_amount);
 
     // create a snapshot of the blockchain state
     await utils.createSnapshot(aeSdk);
@@ -33,38 +33,38 @@ describe('FungibleTokenFull', () => {
   });
 
   it('get owner balance', async () => {
-    const address = await utils.getDefaultAccounts()[0].address();
-    const result = await contract.methods.balance(address);
+    const address = await utils.getDefaultAccounts()[0].address;
+    const result = await contract.balance(address);
     assert.equal(result.decodedResult, original_amount)
   });
 
   it('transfer', async () => {
-    const address = await utils.getDefaultAccounts()[0].address();
-    const another_address = await utils.getDefaultAccounts()[1].address();
+    const address = await utils.getDefaultAccounts()[0].address;
+    const another_address = await utils.getDefaultAccounts()[1].address;
     const amount = 50000;
 
-    let result = await contract.methods.transfer(another_address, amount);
+    let result = await contract.transfer(another_address, amount);
     assert.equal(result.result.returnType, "ok");
 
-    result = await contract.methods.balances();
+    result = await contract.balances();
     assert.equal(result.result.returnType, "ok");
     assert.equal(result.decodedResult.get(address), original_amount - amount)
     assert.equal(result.decodedResult.get(another_address), amount)
   });
 
   it('allowance -> transfer', async () => {
-    const address = await utils.getDefaultAccounts()[0].address();
-    const another_address = await utils.getDefaultAccounts()[1].address();
+    const address = await utils.getDefaultAccounts()[0].address;
+    const another_address = await utils.getDefaultAccounts()[1].address;
     const amount = 50000;
 
-    let result = await contract.methods.create_allowance(another_address, amount);
+    let result = await contract.create_allowance(another_address, amount);
     assert.equal(result.result.returnType, "ok");
 
     let accounts = utils.getDefaultAccounts();
-    result = await contract.methods.transfer_allowance(address, another_address, amount, {onAccount: accounts[1]});
+    result = await contract.transfer_allowance(address, another_address, amount, {onAccount: accounts[1]});
     assert.equal(result.result.returnType, "ok");
 
-    result = await contract.methods.balances();
+    result = await contract.balances();
     assert.equal(result.result.returnType, "ok");
     assert.equal(result.decodedResult.get(address), original_amount - amount)
     assert.equal(result.decodedResult.get(another_address), amount)
