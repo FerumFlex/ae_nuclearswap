@@ -103,6 +103,23 @@ describe('Gate', () => {
 
     result = await contractToken.balance(secondAddress);
     assert.equal(result.decodedResult, amount);
+
+    // claim second time
+    try {
+      await contractGate.claim(
+        swapId,
+        Buffer.from(fromToken.substr(2), "hex"),
+        toToken,
+        Buffer.from(sender.substr(2), "hex"),
+        recipient,
+        amount,
+        nonce,
+        convertedSignature,
+      );
+      assert.equal(1, 0, "Should not get there");
+    } catch(error) {
+      assert.equal(error.message, 'Invocation failed: "Swap should not be used"');
+    }
   });
 
   it("claim -> fail wrong signer", async() => {
@@ -198,6 +215,13 @@ describe('Gate', () => {
 
     contractBalance = (await contractToken.balance("ak_" + contractGate.$options.address.substr(3))).decodedResult;
     assert.equal(contractBalance, 0n, "Should burn amount");
+
+    try {
+      await contractGate.fund_cancel(swapId);
+      assert.equal(1, 0, "Should not get there");
+    } catch(error) {
+      assert.equal(error.message, 'Invocation failed: "refundable: already withdrawn"');
+    }
   });
 
   it("fund -> cancel", async() => {
@@ -218,7 +242,6 @@ describe('Gate', () => {
     result = await contractGate.fund(fromToken, toToken, recipient, amount, ++nonce, unix, {amount: fee});
 
     const swapId = "0x" + Buffer.from(result.decodedResult).toString("hex");
-    console.log(`Swap id: ${swapId}`);
 
     let balance = (await contractToken.balance(mainAddress)).decodedResult;
     assert.equal(balance + amount, initialBalance, "Should withdraw some funds");
