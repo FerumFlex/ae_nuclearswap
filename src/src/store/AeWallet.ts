@@ -72,9 +72,9 @@ export default class AeWallet extends IWallet{
 
   get explorerAddressLink() : string | undefined {
     if (AE_NETWORK === "ae_mainnet") {
-      return this.address && this.networkId ? `https://explorer.testnet.aeternity.io/account/${this.address}` : undefined;
-    } else {
       return this.address && this.networkId ? `https://explorer.aeternity.io/account/${this.address}` : undefined;
+    } else {
+      return this.address && this.networkId ? `https://explorer.testnet.aeternity.io/account/${this.address}` : undefined;
     }
   }
 
