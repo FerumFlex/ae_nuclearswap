@@ -29,7 +29,7 @@ build:
   before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   services:
-    - name: docker:20.10.16-dind
+    - name: docker:19.03.12-dind
       alias: dockerdind
       command: [ "--tls=false" ]
   script:

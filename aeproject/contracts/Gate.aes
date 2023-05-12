@@ -213,7 +213,8 @@ contract Gate =
 
     require(Crypto.ecverify_secp256k1(get_unsigned_msg(swapId), state.oracle, signature), "Signature is not valid")
 
-    put(state{ swaps[swapId].signature = Some(signature), swaps[swapId].withdrawn = true})
+    put(state{ swaps[swapId].signature = Some(signature) })
+    put(state{ swaps[swapId].withdrawn = true })
     state.swaps[swapId].fromToken.burn(state.swaps[swapId].amount)
 
     Chain.event(SwapSigned(swapId, signature))

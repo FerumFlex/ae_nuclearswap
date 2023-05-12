@@ -38,14 +38,6 @@ const ETH_SELF_ADDRESS = ethProvider.addresses[0];
 
 const web3 = new Web3(providerUrl);
 const web3Signer = new Web3(ethProvider);
-const gateContract = new web3.eth.Contract(
-  ethGate.abi,
-  ethGate.networks[ETH_NETWOKR_ID].address
-);
-const gateContractSigner = new web3Signer.eth.Contract(
-  ethGate.abi,
-  ethGate.networks[ETH_NETWOKR_ID].address
-);
 
 let NODE_URL: string;
 if (AE_NETWORK === "ae_uat") {
@@ -102,7 +94,11 @@ const filterContracts = (contracts: any[]) : any[] => {
       return;
     }
 
-    if (contract.withdrawd) {
+    if (contract.withdrawn) {
+      return;
+    }
+
+    if (contract.signature) {
       return;
     }
 
