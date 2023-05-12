@@ -32,6 +32,7 @@ build:
     - name: docker:19.03.12-dind
       alias: dockerdind
   script:
+    - cd app/
     - docker pull $DOCKER_REGISTRY:latest || true
     - docker build --network host --cache-from $DOCKER_REGISTRY:latest -t $DOCKER_REGISTRY:$CI_COMMIT_SHORT_SHA -t $DOCKER_REGISTRY:latest .
     - docker push $DOCKER_REGISTRY:$CI_COMMIT_SHORT_SHA
