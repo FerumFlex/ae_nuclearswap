@@ -27,17 +27,15 @@ build:
     - if: '$CI_COMMIT_TAG == null'
   stage: build
   before_script:
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
   services:
     - name: docker:19.03.12-dind
       alias: dockerdind
-      command: [ "--tls=false" ]
   script:
-    - cd app/
-    - docker pull $CI_REGISTRY:latest || true
-    - docker build --cache-from $CI_REGISTRY:latest -t $CI_REGISTRY:prod -t $CI_REGISTRY:latest .
-    - docker push $CI_REGISTRY:prod
-    - docker push $CI_REGISTRY:latest
+    - docker pull $DOCKER_REGISTRY:latest || true
+    - docker build --network host --cache-from $DOCKER_REGISTRY:latest -t $DOCKER_REGISTRY:$CI_COMMIT_SHORT_SHA -t $DOCKER_REGISTRY:latest .
+    - docker push $DOCKER_REGISTRY:$CI_COMMIT_SHORT_SHA
+    - docker push $DOCKER_REGISTRY:latest
 
 deploy_cdn:
   stage: deploy
