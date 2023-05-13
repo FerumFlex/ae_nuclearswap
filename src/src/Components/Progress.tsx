@@ -1,5 +1,6 @@
 import { Text, Center, Timeline } from '@mantine/core';
 import { IconCheck } from '@tabler/icons';
+import { WAIT_MINUTES } from './Actions';
 
 export default function Progress ({ currentAction }: { currentAction: number | null}) {
   if (currentAction === null) {
@@ -16,10 +17,10 @@ export default function Progress ({ currentAction }: { currentAction: number | n
           <Text color="dimmed" size="sm">Fund contract with tokens</Text>
         </Timeline.Item>
         <Timeline.Item bullet={<IconCheck size={12} />} title="Waiting">
-          <Text color="dimmed" size="sm">Waiting for signature</Text>
+          <Text color="dimmed" size="sm">Waiting for signature (max: {WAIT_MINUTES} minutes)</Text>
         </Timeline.Item>
-        <Timeline.Item bullet={<IconCheck size={12} />} title="Withdraw">
-          <Text color="dimmed" size="sm">Claim funds</Text>
+        <Timeline.Item bullet={<IconCheck size={12} />} title="Withdraw or Cancel">
+          <Text color="dimmed" size="sm">Claim funds or cancel</Text>
         </Timeline.Item>
       </Timeline>
     </Center>

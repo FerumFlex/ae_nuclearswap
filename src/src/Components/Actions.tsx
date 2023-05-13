@@ -8,8 +8,17 @@ import { IconCheck, IconX } from '@tabler/icons';
 
 const Buffer = require('buffer').Buffer;
 const ETH_NETWORK = process.env.REACT_APP_ETH_NETWORK;
+export const WAIT_MINUTES: number = 10;
 
-export async function aeToEth(provider: any, chainId: number | undefined, aeWallet: any, ethWallet: any, contracts: any, amount: bigint, setIsLoading: any, setCurrentAction: any) {
+export async function aeToEth(
+    provider: any,
+    chainId: number | undefined,
+    aeWallet: any,
+    ethWallet: any,
+    amount: bigint,
+    setIsLoading: any,
+    setCurrentAction: any,
+  ) {
   setIsLoading(true);
   try {
     let gateContractWithSigner = getContract(provider, chainId, ethGate);
@@ -57,18 +66,18 @@ export async function aeToEth(provider: any, chainId: number | undefined, aeWall
     let fee = result.decodedResult;
 
     try {
-      const endtime = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
+      const endtime = Date.now() + WAIT_MINUTES * 60 * 1000;
       const nonce = +new Date();
       result = await aeWallet.gateContract.fund(
-          aeWallet.aeToken.address,
-          Buffer.from(usdtAddressWithSigner.address.substr(2), "hex"),
-          Buffer.from(ethWallet.address.substr(2), "hex"),
-          amount,
-          nonce,
-          endtime,
-          {
-            amount: fee
-          }
+        aeWallet.aeToken.address,
+        Buffer.from(usdtAddressWithSigner.address.substr(2), "hex"),
+        Buffer.from(ethWallet.address.substr(2), "hex"),
+        amount,
+        nonce,
+        endtime,
+        {
+          amount: fee
+        }
       );
       const swapId = "0x" + Buffer.from(result.decodedResult).toString("hex");
       console.log("swap id ", swapId);
@@ -77,10 +86,13 @@ export async function aeToEth(provider: any, chainId: number | undefined, aeWall
       let signature = await aeWaitForsigned(aeWallet, swapId);
       console.log(signature);
       if (!signature) {
+        setCurrentAction(3);
+        await aeWallet.gateContract.fund_cancel(swapId);
+
         showNotification({
           color: 'red',
           title: 'Error',
-          message: 'Can not finish exchange',
+          message: 'Sorry, something went wrong we canceled your swap',
         });
         return;
       }
@@ -119,7 +131,15 @@ export async function aeToEth(provider: any, chainId: number | undefined, aeWall
   }
 }
 
-export async function ethToAe(provider: any, chainId: number | undefined, aeWallet: any, ethWallet: any, contracts: any, amount: bigint, setIsLoading: any, setCurrentAction: any) {
+export async function ethToAe(
+  provider: any,
+  chainId: number | undefined,
+  aeWallet: any,
+  ethWallet: any,
+  amount: bigint,
+  setIsLoading: any,
+  setCurrentAction: any,
+) {
   setIsLoading(true);
   try {
     setCurrentAction(0);
@@ -161,7 +181,7 @@ export async function ethToAe(provider: any, chainId: number | undefined, aeWall
     setCurrentAction(1);
 
     let toToken = "ak" + aeWallet.aeToken.address.substr(2);
-    const endtime = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
+    const endtime = Math.round((+new Date() + WAIT_MINUTES * 60 * 1000) / 1000);
     const nonce = +new Date();
     const fee = await gateContractWithSigner.getFee();
 
@@ -187,10 +207,14 @@ export async function ethToAe(provider: any, chainId: number | undefined, aeWall
       setCurrentAction(2);
       let signature = await ethwaitForSigned(gateContractWithSigner, swapId);
       if (!signature) {
+        setCurrentAction(3);
+        let tx = await gateContractWithSigner.fundCancel(swapId);
+        await tx.wait();
+
         showNotification({
           color: 'red',
           title: 'Error',
-          message: 'Can not finish exchange',
+          message: 'Sorry, something went wrong we canceled your swap',
         });
         return;
       }
@@ -241,7 +265,7 @@ function convertAeSignatureToEth(signature: string) : string {
 }
 
 async function ethwaitForSigned(gateContractWithSigner: any, swapId: string) : Promise<string> {
-  let time_to_wait = 20 * 60;
+  let time_to_wait = WAIT_MINUTES * 60 + 10;
   while (true) {
     let swap = await gateContractWithSigner.getSwap(swapId);
     if (swap.signature && swap.signature !== "0x") {
@@ -260,7 +284,7 @@ async function ethwaitForSigned(gateContractWithSigner: any, swapId: string) : P
 }
 
 async function aeWaitForsigned(aeWallet: any, swapId: string) : Promise<string> {
-  let time_to_wait = 20 * 60;
+  let time_to_wait = WAIT_MINUTES * 60 + 10;
   while (true) {
     let result = await aeWallet.gateContract.get_swap(swapId);
     let swap = result.decodedResult;

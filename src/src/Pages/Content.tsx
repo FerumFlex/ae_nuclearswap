@@ -21,7 +21,7 @@ const useStyles = createStyles((theme) => ({
 }));
 
 export const ContentPage = observer( () => {
-  const {aeWallet, ethWallet, contracts, wallets,  } = useStore();
+  const {aeWallet, ethWallet, wallets,  } = useStore();
   const networks = [ ...wallets.wallets].map((w) => {
     let info = w.info;
     return {
@@ -103,9 +103,9 @@ export const ContentPage = observer( () => {
     }
 
     if (wallets.fromWallet.info.symbol === "AE") {
-      aeToEth(library, chainId, aeWallet, ethWallet, contracts, fromValue, setIsLoading, setCurrentAction);
+      aeToEth(library, chainId, aeWallet, ethWallet, fromValue, setIsLoading, setCurrentAction);
     } else if (wallets.fromWallet.info.symbol === "ETH") {
-      ethToAe(library, chainId, aeWallet, ethWallet, contracts, fromValue, setIsLoading, setCurrentAction);
+      ethToAe(library, chainId, aeWallet, ethWallet, fromValue, setIsLoading, setCurrentAction);
     }
   };
 
