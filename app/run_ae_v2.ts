@@ -11,7 +11,6 @@ dotenv.config();
 
 const ETH_MNEMONIC: string = process.env["ETH_MNEMONIC"] || "";
 const ETH_NETWOKR_ID: string = process.env["ETH_NETWORK_ID"] || "";
-const INFURA_ACCESS_TOKEN: string = process.env["INFURA_ACCESS_TOKEN"] || "";
 const providerUrl: string = process.env["PROVIDER_URL"] || "";
 const AE_SECRET_KEY = process.env["AE_SECRET_KEY"];
 const AE_ADDRESS = process.env["AE_ADDRESS"];

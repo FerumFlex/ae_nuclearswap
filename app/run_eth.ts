@@ -26,7 +26,7 @@ const web3 = new Web3(providerUrl);
 const web3Signer = new Web3(ethProvider);
 const gateContract = new web3.eth.Contract(ethGate.abi, ethGate.networks[ETH_NETWOKR_ID].address);
 const gateContractSigner = new web3Signer.eth.Contract(ethGate.abi, ethGate.networks[ETH_NETWOKR_ID].address);
-let FROM_BLOCK_EVENT = 0;
+let FROM_BLOCK_EVENT = 90000000;
 
 
 const main = async () => {
@@ -38,24 +38,34 @@ const main = async () => {
 function loadEvents() {
   console.log('Load events');
 
-  let options = {
-    filter: {
-      value: [],
-    },
-    fromBlock: FROM_BLOCK_EVENT
-  };
+  // console.log(web3);
+  let interval = 10000;
+  let from = FROM_BLOCK_EVENT;
+  let to = FROM_BLOCK_EVENT + interval;
+  web3.eth.getBlockNumber(async function(error: any, currentBlock: number){
+    to = Math.min(to, currentBlock);
+    let options = {
+      filter: {
+        value: [],
+      },
+      fromBlock: from,
+      toBlock: to
+    };
+    console.log(`From ${from} - ${to}`);
 
-  gateContract.getPastEvents("FundEvent", options, async function(error: any, events: any) {
-    if (error) {
-      console.log(error);
-      return
-    }
-    for (let event of events) {
-      if (event.blockNumber > FROM_BLOCK_EVENT) {
-        FROM_BLOCK_EVENT = event.blockNumber + 1;
+    gateContract.getPastEvents("FundEvent", options, async function(error: any, events: any) {
+      if (error) {
+        console.log(error);
+        return
       }
-      await onFundEvent(event);
-    }
+      for (let event of events) {
+        if (event.blockNumber > FROM_BLOCK_EVENT) {
+          FROM_BLOCK_EVENT = event.blockNumber + 1;
+        }
+        await onFundEvent(event);
+      }
+      FROM_BLOCK_EVENT = to;
+    });
   });
 }
 
