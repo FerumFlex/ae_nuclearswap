@@ -3,8 +3,6 @@ import './App.css';
 import { AppShell } from '@mantine/core';
 import { HeaderResponsive } from './Components/Header';
 import { FooterCentered } from './Components/Footer';
-import { Content } from './Components/Content';
-import { Utils } from './Components/Utils';
 import { initSdk } from './utils/aeternity';
 import { Routes, Route } from "react-router-dom";
 import { observer } from "mobx-react-lite"
@@ -14,6 +12,12 @@ import { useEthers, useTokenBalance } from '@usedapp/core'
 import usdtToken from './contracts/USDT.json';
 import { NotificationsProvider } from '@mantine/notifications';
 import { ARBITRUM_USDT_ADDRESS } from './utils/utils';
+
+// pages
+import { ContentPage } from './Pages/Content';
+import { UtilsPage } from './Pages/Utils';
+import { AboutPage } from './Pages/About';
+
 
 const AE_NETWORK = process.env.REACT_APP_AE_NETWORK;
 const ETH_NETWORK = process.env.REACT_APP_ETH_NETWORK;
@@ -44,25 +48,24 @@ const App = observer(() => {
     ethWallet.setInfo(account ? account : "", chainId?.toString(), usdtBalance?.toBigInt());
   }, [account, chainId, usdtBalance, ethWallet]);
 
-  let HEADER_LINKS;
-  if (AE_NETWORK === "ae_mainnet") {
-    HEADER_LINKS = [
-      {
-        "link": "/",
-        "label": "Bridge"
-      }
-    ];
-  } else {
-    HEADER_LINKS = [
-      {
-        "link": "/",
-        "label": "Bridge"
-      },
+  let HEADER_LINKS = [
+    {
+      "link": "/",
+      "label": "Bridge"
+    },
+    {
+      "link": "/about",
+      "label": "About"
+    }
+  ];
+
+  if (AE_NETWORK === "ae_uat") {
+    HEADER_LINKS.push(
       {
         "link": "/utils",
         "label": "Utils"
       }
-    ];
+    );
   }
 
   return (
@@ -75,8 +78,9 @@ const App = observer(() => {
             footer={<FooterCentered links={[]} />}
           >
             <Routes>
-              <Route path="/" element={<Content />}></Route>
-              <Route path="/utils" element={<Utils />}></Route>
+              <Route path="/" element={<ContentPage />}></Route>
+              <Route path="/about" element={<AboutPage />}></Route>
+              <Route path="/utils" element={<UtilsPage />}></Route>
             </Routes>
           </AppShell>
         </NotificationsProvider>

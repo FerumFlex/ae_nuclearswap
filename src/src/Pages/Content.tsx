@@ -4,10 +4,10 @@ import { IconExchange } from '@tabler/icons';
 import { useStore } from '../store';
 import { observer } from "mobx-react-lite";
 import { showNotification } from '@mantine/notifications';
-import { FromBlock } from './FromBlock';
-import { ToBlock } from './ToBlock';
-import Progress from './Progress';
-import { aeToEth, ethToAe } from './Actions';
+import { FromBlock } from '../Components/FromBlock';
+import { ToBlock } from '../Components/ToBlock';
+import Progress from '../Components/Progress';
+import { aeToEth, ethToAe } from '../Components/Actions';
 import { useEthers } from '@usedapp/core'
 
 
@@ -20,7 +20,7 @@ const useStyles = createStyles((theme) => ({
   }
 }));
 
-export const Content = observer( () => {
+export const ContentPage = observer( () => {
   const {aeWallet, ethWallet, contracts, wallets,  } = useStore();
   const networks = [ ...wallets.wallets].map((w) => {
     let info = w.info;
@@ -52,6 +52,22 @@ export const Content = observer( () => {
 
     if ((ETH_NETWORK === "development") && (ethWallet.networkId !== "1337")) {
       return "ETH - Switch to development";
+    }
+
+    if ((ETH_NETWORK === "arbitrum_goerli") && (ethWallet.networkId !== "421613")) {
+      return "ETH - Switch to Arbitrum goerli";
+    }
+
+    if ((ETH_NETWORK === "arbitrum") && (ethWallet.networkId !== "42161")) {
+      return "ETH - Switch to Arbitrum One";
+    }
+
+    if (!aeWallet.address) {
+      return "Please connect Superhero wallet";
+    }
+
+    if (!ethWallet.address) {
+      return "Please connect Metamask wallet";
     }
   };
 

@@ -11,7 +11,7 @@ import { getContract, getMainnetUsdtContract } from '../utils/utils';
 const ETH_NETWORK = process.env.REACT_APP_ETH_NETWORK;
 
 
-export function Utils() {
+export function UtilsPage() {
   const {aeWallet, ethWallet} = useStore();
   const { chainId, library } = useEthers();
   const [aeFaucetLoading, setAeFaucetLoading] = useState(false);
