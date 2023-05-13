@@ -75,7 +75,7 @@ async function onFundEvent(event: any) {
   const swap = await gateContract.methods.getSwap(swapId).call();
   const blockNumber = await web3.eth.getBlockNumber();
   const block = await web3.eth.getBlock(blockNumber);
-  const timestamp = block["timestamp"] * 1000;
+  const timestamp = block["timestamp"];
 
   if (swap.withdrawn && swap.signature) {
     console.log(`🔵 ${swapId} is finished`);
