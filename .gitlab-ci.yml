@@ -47,10 +47,30 @@ deploy_cdn:
     - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
     - unzip -q awscliv2.zip
     - ./aws/install
+  variables:
+    REACT_APP_AE_NETWORK: ae_mainnet
+    REACT_APP_ETH_NETWORK: arbitrum
   script:
     - cd src/
     - npm i
     - npm run deploy
+
+deploy_testnet_cdn:
+  stage: deploy
+  image: node:16
+  rules:
+    - if: $CI_COMMIT_TAG
+  before_script:
+    - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    - unzip -q awscliv2.zip
+    - ./aws/install
+  variables:
+    REACT_APP_AE_NETWORK: ae_uat
+    REACT_APP_ETH_NETWORK: arbitrum_goerli
+  script:
+    - cd src/
+    - npm i
+    - npm run deploy-testnet
 
 make_release:
   image: node:18-buster-slim

@@ -40,6 +40,7 @@
   },
   "scripts": {
     "deploy": "react-scripts build && aws s3 sync build/ s3://aerenity-react-origin --delete && aws cloudfront create-invalidation --distribution-id E8KNCQF0VHP3Y --paths '/index.html' && rm -rf build/",
+    "deploy-testnet": "react-scripts build && aws s3 sync build/ s3://aerenity-testnet-react-origin --delete && aws cloudfront create-invalidation --distribution-id E2JZX6H6GTOC7X --paths '/index.html' && rm -rf build/",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
